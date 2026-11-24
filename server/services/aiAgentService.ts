@@ -27,6 +27,11 @@ export class AiAgentService {
     return this.aiClient;
   }
 
+  /**
+   * Calculates dynamic timeout based on payload token length and configurable environment setting
+   * @param inputLength - Length of the prompt string
+   * @returns Milliseconds before timing out
+   */
   public static calculateAdaptiveTimeout(inputLength: number): number {
     const baseTimeout = config.aiTimeoutMs || 25000;
     const dynamicOffset = Math.round(inputLength * 8);
