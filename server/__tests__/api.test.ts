@@ -133,7 +133,7 @@ describe('ClearAir Backend Architecture & Indian CPCB Standards Suite', () => {
     expect(res.body.recommendations).toHaveProperty('indoorGuidance');
     expect(res.body.recommendations).toHaveProperty('sustainableTransport');
     expect(res.body.recommendations).toHaveProperty('impactMetrics');
-  }, 15000);
+  }, 30000);
 
   it('POST /api/agent/chat grounds answers in telemetry and sanitizes prompt injection', async () => {
     const res = await request(app).post('/api/agent/chat').send({

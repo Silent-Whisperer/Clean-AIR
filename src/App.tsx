@@ -78,9 +78,14 @@ export const App: React.FC = () => {
   };
 
   const handleAddLocation = (newLoc: SavedLocation) => {
+    const existingFiltered = profile.locations.filter(
+      (l) =>
+        l.id !== newLoc.id &&
+        !(l.cityName.toLowerCase() === newLoc.cityName.toLowerCase() && l.locality === newLoc.locality)
+    );
     const updated = {
       ...profile,
-      locations: [newLoc, ...profile.locations],
+      locations: [newLoc, ...existingFiltered],
       activeLocationId: newLoc.id,
     };
     setProfile(updated);
@@ -99,7 +104,7 @@ export const App: React.FC = () => {
 
   const handleStationMapSelect = (cityName: string, lat: number, lon: number, stationName: string) => {
     const customLoc: SavedLocation = {
-      id: `station-${Date.now()}`,
+      id: `station-${stationName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
       label: 'Custom',
       customName: stationName,
       cityName,
@@ -108,7 +113,6 @@ export const App: React.FC = () => {
       longitude: lon,
     };
     handleAddLocation(customLoc);
-    setActiveTab('dashboard');
   };
 
   return (
@@ -247,6 +251,7 @@ export const App: React.FC = () => {
               <StationExplorer
                 currentCity={activeLocation.cityName}
                 onSelectStationLocation={handleStationMapSelect}
+                onViewDashboard={() => setActiveTab('dashboard')}
               />
             )}
 
