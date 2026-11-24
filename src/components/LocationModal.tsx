@@ -120,7 +120,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label="Manage Monitored Locations"
-      className="absolute top-full left-0 right-0 mt-2 z-30 bg-white rounded-2xl border border-stone-200 shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100"
+      className="absolute top-full left-0 right-0 mt-2 z-30 bg-white rounded-2xl border border-stone-200 shadow-xl p-4 max-h-[80vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-100"
     >
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-stone-100">
         <span className="text-xs font-bold uppercase tracking-wider text-stone-500">

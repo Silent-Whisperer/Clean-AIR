@@ -61,7 +61,7 @@ export const CommunityMode: React.FC = () => {
   };
 
   return (
-    <section className="bg-white rounded-3xl border border-stone-200/90 shadow-xs p-6 sm:p-8 mb-8">
+    <section className="bg-white rounded-3xl border border-stone-200/90 shadow-xs p-4 sm:p-6 lg:p-8 mb-8">
       <div className="mb-6 pb-4 border-b border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">

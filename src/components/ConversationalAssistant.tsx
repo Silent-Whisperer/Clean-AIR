@@ -94,18 +94,18 @@ export const ConversationalAssistant: React.FC<ConversationalAssistantProps> = (
   };
 
   return (
-    <section className="bg-white rounded-3xl border border-stone-200/90 shadow-xs p-6 sm:p-8 mb-8 flex flex-col h-[750px]">
-      <div className="pb-4 border-b border-stone-100 flex items-center justify-between">
+    <section className="bg-white rounded-3xl border border-stone-200/90 shadow-xs p-4 sm:p-6 lg:p-8 mb-8 flex flex-col h-[calc(100vh-210px)] min-h-[480px] max-h-[750px] sm:h-[650px] lg:h-[750px]">
+      <div className="pb-3 sm:pb-4 border-b border-stone-100 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-serif font-bold text-stone-900">
+            <h2 className="text-lg sm:text-xl font-serif font-bold text-stone-900">
               ClearAir Conversational Specialist
             </h2>
-            <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase bg-stone-100 text-stone-700">
+            <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-stone-100 text-stone-700">
               CPCB Grounded
             </span>
           </div>
-          <p className="text-xs text-stone-600 mt-0.5">
+          <p className="text-[11px] sm:text-xs text-stone-600 mt-0.5">
             Real questions grounded in verified data, pulmonary physiology, and household context.
           </p>
         </div>
@@ -207,16 +207,17 @@ export const ConversationalAssistant: React.FC<ConversationalAssistantProps> = (
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about today's smog, mask types, or room ventilation..."
-          className="flex-1 px-4 py-2.5 text-xs border border-stone-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-800 bg-[#FAF8F5]"
+          className="flex-1 px-3.5 sm:px-4 py-2.5 min-h-[44px] text-xs sm:text-sm border border-stone-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-800 bg-[#FAF8F5]"
           disabled={isLoading}
         />
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-          className="px-5 py-2.5 bg-stone-900 text-white text-xs font-semibold rounded-xl hover:bg-stone-800 disabled:opacity-40 transition-colors flex items-center gap-1.5 shadow-2xs"
+          aria-label="Send message to assistant"
+          className="px-4 sm:px-5 py-2.5 min-h-[44px] bg-stone-900 text-white text-xs font-semibold rounded-xl hover:bg-stone-800 active:scale-95 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-2xs shrink-0"
         >
           <Send className="w-3.5 h-3.5" />
-          <span>Ask</span>
+          <span className="hidden sm:inline">Ask</span>
         </button>
       </form>
     </section>

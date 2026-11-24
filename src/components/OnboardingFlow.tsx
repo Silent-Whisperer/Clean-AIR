@@ -102,7 +102,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
         </div>
 
         {/* Step Content */}
-        <div className="p-6 sm:p-8 space-y-6">
+        <div className="p-5 sm:p-8 space-y-6 max-h-[60vh] overflow-y-auto">
           {step === 1 && <OnboardingStep1 profile={profile} setProfile={setProfile} />}
           {step === 2 && <OnboardingStep2 profile={profile} setProfile={setProfile} />}
           {step === 3 && <OnboardingStep3 profile={profile} setProfile={setProfile} />}

@@ -85,11 +85,11 @@ export const StationExplorer: React.FC<StationExplorerProps> = ({
   };
 
   return (
-    <section className="bg-white rounded-3xl border border-stone-200/90 shadow-xs p-6 sm:p-8 mb-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-stone-100 mb-6">
+    <section className="bg-white rounded-3xl border border-stone-200/90 shadow-xs p-4 sm:p-6 lg:p-8 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 sm:pb-6 border-b border-stone-100 mb-6">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-serif font-bold text-stone-900">
+            <h2 className="text-lg sm:text-xl font-serif font-bold text-stone-900">
               Verified CAAQMS Continuous Monitoring Network
             </h2>
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
@@ -102,12 +102,12 @@ export const StationExplorer: React.FC<StationExplorerProps> = ({
         </div>
 
         {/* City Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none -mx-2 px-2 sm:mx-0 sm:px-0">
           {cities.map((city) => (
             <button
               key={city}
               onClick={() => setFilterCity(city)}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[34px] ${
                 filterCity === city
                   ? 'bg-stone-900 text-white'
                   : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
@@ -124,7 +124,7 @@ export const StationExplorer: React.FC<StationExplorerProps> = ({
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Station List (Col 1-5) */}
-          <div className="lg:col-span-5 space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
+          <div className="lg:col-span-5 space-y-2.5 max-h-[360px] sm:max-h-[520px] overflow-y-auto pr-1">
             {filtered.map((st) => {
               const isSelected = selectedStation?.id === st.id;
               const isMatchCity = st.city.toLowerCase().includes(currentCity.toLowerCase());

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { LocationBar } from './components/LocationBar';
-import { HeroAqiDisplay } from './components/HeroAqiDisplay';
-import { ImmediateActions } from './components/ImmediateActions';
+import { DashboardView } from './components/DashboardView';
 import { SmartDailyPlanner } from './components/SmartDailyPlanner';
 import { StationExplorer } from './components/StationExplorer';
 import { IndoorAirCoach } from './components/IndoorAirCoach';
@@ -143,7 +142,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 sm:pb-12">
         {/* Dynamic Location Bar with Locate Me and Multiple Places */}
         <LocationBar
           locations={profile.locations}
@@ -186,61 +185,15 @@ export const App: React.FC = () => {
         {airQuality && agentData && (
           <>
             {activeTab === 'dashboard' && (
-              <>
-                {/* 1. Large Impressive Air Quality Hero Status */}
-                <HeroAqiDisplay
-                  metrics={airQuality}
-                  onRefresh={() => fetchTelemetryAndRecommendations(profile)}
-                  isLoading={loading}
-                />
-
-                {/* 2. Most Important Section: What Should I Actually Do Today? */}
-                <ImmediateActions
-                  actions={agentData.top3Actions}
-                  engineUsed={agentData.engineUsed}
-                  isAiGenerated={agentData.isAiGenerated}
-                  onExploreTimeline={() => setActiveTab('planner')}
-                />
-
-                {/* 3. Editorial Overview Highlights */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <div className="bg-white rounded-3xl border border-stone-200/90 p-6 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-serif font-bold text-lg text-stone-900 mb-2">
-                        Indoor Air Quality Shield
-                      </h3>
-                      <p className="text-xs text-stone-600 leading-relaxed mb-4">
-                        {profile.homeFeatures.hasAirPurifier
-                          ? 'Active HEPA purifier registered. Maintain bedroom refuge seals to keep indoor PM2.5 under 25 µg/m³.'
-                          : 'No air purifier registered. Relying on verified Corsi-Rosenthal DIY box filtration, damp mopping, and window draft towel stoppers.'}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('coach')}
-                      className="text-xs font-bold text-emerald-900 hover:text-emerald-700 underline self-start"
-                    >
-                      Open Room-by-Room Checklist & DIY Guide →
-                    </button>
-                  </div>
-
-                  <div className="bg-white rounded-3xl border border-stone-200/90 p-6 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-serif font-bold text-lg text-stone-900 mb-2">
-                        Commute & Exposure Trade-Off
-                      </h3>
-                      <p className="text-xs text-stone-600 leading-relaxed mb-4">
-                        {agentData.sustainableTransport.agentVerdict}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('alternatives')}
-                      className="text-xs font-bold text-emerald-900 hover:text-emerald-700 underline self-start"
-                    >
-                      Evaluate Transit Exposure vs Emissions →
-                    </button>
-                  </div>
-                </div>
-              </>
+              <DashboardView
+                airQuality={airQuality}
+                agentData={agentData}
+                profile={profile}
+                loading={loading}
+                onRefresh={() => fetchTelemetryAndRecommendations(profile)}
+                onExploreTimeline={() => setActiveTab('planner')}
+                onNavigateTab={(tab) => setActiveTab(tab)}
+              />
             )}
 
             {activeTab === 'planner' && (

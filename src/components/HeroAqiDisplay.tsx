@@ -87,16 +87,16 @@ export const HeroAqiDisplay: React.FC<HeroAqiDisplayProps> = ({
   const isSevere = metrics.aqi >= 300;
 
   return (
-    <div className={`bg-white rounded-3xl border border-stone-200/90 shadow-xs p-6 sm:p-8 mb-8 relative overflow-hidden ring-1 ${theme.ring}`}>
+    <div className={`bg-white rounded-3xl border border-stone-200/90 shadow-xs p-4 sm:p-6 lg:p-8 mb-8 relative overflow-hidden ring-1 ${theme.ring}`}>
       {/* Top Header Strip: Dynamic Station & Severity Telemetry */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-stone-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-stone-100">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className={`w-2.5 h-2.5 rounded-full ring-4 ${theme.beacon} animate-pulse`} aria-hidden="true" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-stone-600">
               Verified Continuous Monitoring Telemetry
             </h3>
-            <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-stone-100 text-stone-800 border border-stone-200">
+            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-semibold bg-stone-100 text-stone-800 border border-stone-200">
               {metrics.scale}
             </span>
           </div>
@@ -107,7 +107,7 @@ export const HeroAqiDisplay: React.FC<HeroAqiDisplayProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs text-stone-600">
+        <div className="flex items-center gap-3 text-xs text-stone-600 self-start sm:self-auto">
           <span className="flex items-center gap-1.5 font-medium">
             <Clock className="w-3.5 h-3.5 text-stone-500" aria-hidden="true" />
             <span>Updated: {new Date(metrics.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -117,9 +117,9 @@ export const HeroAqiDisplay: React.FC<HeroAqiDisplayProps> = ({
               onClick={onRefresh}
               disabled={isLoading}
               aria-label="Refresh continuous telemetry data"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 hover:text-stone-950 active:scale-95 transition-all border border-stone-200/90 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-full text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 hover:text-stone-950 active:scale-95 transition-all border border-stone-200/90 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
             >
-              <RotateCw className={`w-3 h-3 text-stone-600 ${isLoading ? 'animate-spin text-emerald-700' : ''}`} aria-hidden="true" />
+              <RotateCw className={`w-3.5 h-3.5 text-stone-600 ${isLoading ? 'animate-spin text-emerald-700' : ''}`} aria-hidden="true" />
               <span>{isLoading ? 'Updating...' : 'Refresh'}</span>
             </button>
           )}
@@ -127,15 +127,15 @@ export const HeroAqiDisplay: React.FC<HeroAqiDisplayProps> = ({
       </div>
 
       {/* Main Air Quality Impact Banner */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 pt-5 items-center">
         {/* Large AQI Gauge Presentation (Col 1-5) */}
         <div className="lg:col-span-5 flex flex-col justify-center">
-          <div className="flex items-baseline gap-3">
-            <span className="text-6xl sm:text-7xl font-serif font-black text-stone-950 tracking-tighter tabular-nums">
+          <div className="flex flex-wrap items-baseline gap-2.5 sm:gap-3">
+            <span className="text-5xl sm:text-6xl lg:text-7xl font-serif font-black text-stone-950 tracking-tighter tabular-nums">
               {metrics.aqi}
             </span>
             <div className="space-y-1">
-              <span className="text-xs uppercase font-extrabold tracking-widest text-stone-600 block">
+              <span className="text-[11px] sm:text-xs uppercase font-extrabold tracking-widest text-stone-600 block">
                 NAQI (CPCB)
               </span>
               <span className={`inline-block text-xs font-bold px-2.5 py-0.5 rounded-full border shadow-2xs ${theme.pill}`}>

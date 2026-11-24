@@ -235,11 +235,11 @@ export const LocationBar: React.FC<LocationBarProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
           <button
             onClick={handleLocateMe}
             disabled={isLocating}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-emerald-800 text-white rounded-xl hover:bg-emerald-900 disabled:opacity-50 transition-colors shadow-2xs"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 text-xs font-semibold bg-emerald-800 text-white rounded-xl hover:bg-emerald-900 active:scale-95 disabled:opacity-50 transition-all shadow-2xs"
             title="Detect air quality at your precise coordinates"
           >
             {isLocating ? (
@@ -252,7 +252,7 @@ export const LocationBar: React.FC<LocationBarProps> = ({
 
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl transition-colors border border-stone-200/80"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 min-h-[40px] px-3 py-2 text-xs font-medium bg-stone-100 hover:bg-stone-200 active:scale-95 text-stone-800 rounded-xl transition-all border border-stone-200/80"
           >
             <span>Saved Places ({locations.length})</span>
             <ChevronDown className="w-3.5 h-3.5 text-stone-500" />
