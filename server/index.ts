@@ -2,6 +2,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import fs from 'fs';
 import { EnvironmentalCoordinator } from './coordinator';
 import {
   validateHouseholdProfileInput,
@@ -23,6 +25,7 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:'],
         connectSrc: ["'self'", 'https:'],
+        frameSrc: ["'self'", 'https://www.openstreetmap.org'],
       },
     },
     crossOriginEmbedderPolicy: false,
@@ -170,6 +173,21 @@ app.post(
     });
   }
 );
+
+/**
+ * Production Static File Serving for Render / Monolithic Deployment
+ * @description Serves built Vite frontend assets from dist/ directory when present
+ */
+const distPath = path.resolve(process.cwd(), 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      return res.sendFile(path.join(distPath, 'index.html'));
+    }
+    next();
+  });
+}
 
 /**
  * Centralized Hardened Error Handler
