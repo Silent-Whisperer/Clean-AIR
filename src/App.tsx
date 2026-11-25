@@ -74,52 +74,11 @@ export const App: React.FC = () => {
   };
 
   const handleSelectLocation = (loc: SavedLocation) => {
-    const updated = {
-      ...profile,
+    setProfile((prev) => ({
+      ...prev,
+      locations: [loc],
       activeLocationId: loc.id,
-    };
-    setProfile(updated);
-  };
-
-  const handleAddLocation = (newLoc: SavedLocation) => {
-    const existingFiltered = profile.locations.filter(
-      (l) =>
-        l.id !== newLoc.id &&
-        !(l.cityName.toLowerCase() === newLoc.cityName.toLowerCase() && l.locality === newLoc.locality)
-    );
-    const updated = {
-      ...profile,
-      locations: [newLoc, ...existingFiltered],
-      activeLocationId: newLoc.id,
-    };
-    setProfile(updated);
-  };
-
-  const handleDeleteLocation = (id: string) => {
-    const remaining = profile.locations.filter((l) => l.id !== id);
-    if (remaining.length === 0) {
-      // If user deletes the last location, reset to clean default Delhi station
-      const defaultLoc: SavedLocation = {
-        id: `loc-default-${Date.now()}`,
-        label: 'Home',
-        cityName: 'Delhi',
-        locality: 'Central (CPCB Primary Station)',
-        latitude: 28.6139,
-        longitude: 77.2090,
-      };
-      setProfile({
-        ...profile,
-        locations: [defaultLoc],
-        activeLocationId: defaultLoc.id,
-      });
-      return;
-    }
-    const updated = {
-      ...profile,
-      locations: remaining,
-      activeLocationId: profile.activeLocationId === id ? remaining[0].id : profile.activeLocationId,
-    };
-    setProfile(updated);
+    }));
   };
 
   const handleStationMapSelect = (cityName: string, lat: number, lon: number, stationName: string) => {
@@ -131,8 +90,9 @@ export const App: React.FC = () => {
       locality: stationName,
       latitude: lat,
       longitude: lon,
+      isCurrentGps: true,
     };
-    handleAddLocation(customLoc);
+    handleSelectLocation(customLoc);
   };
 
   return (
@@ -164,13 +124,10 @@ export const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 sm:pb-12">
-        {/* Dynamic Location Bar with Locate Me and Multiple Places */}
+        {/* Dynamic Location Bar with Locate Me and City Search */}
         <LocationBar
-          locations={profile.locations}
-          activeLocationId={profile.activeLocationId}
+          activeLocation={activeLocation}
           onSelectLocation={handleSelectLocation}
-          onAddLocation={handleAddLocation}
-          onDeleteLocation={handleDeleteLocation}
           isLoading={loading}
         />
 

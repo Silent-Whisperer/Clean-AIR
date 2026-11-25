@@ -1,5 +1,5 @@
 import { MonitoringStation } from '../types';
-import { calculateIndianAqiFromPm25, getIndianCategoryFromAqi } from './aqiStandards';
+import { calculateIndianAqiFromPm10, calculateIndianAqiFromPm25, getIndianCategoryFromAqi } from './aqiStandards';
 
 /**
  * Official Active Continuous Ambient Air Quality Monitoring Stations (CAAQMS)
@@ -208,13 +208,13 @@ export async function getLiveMonitoringStations(): Promise<MonitoringStation[]> 
   const promises = VERIFIED_STATION_METADATA.map(async (meta) => {
     try {
       const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${meta.latitude}&longitude=${meta.longitude}&current=pm10,pm2_5&timezone=auto`;
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
       if (res.ok) {
         const data = (await res.json()) as any;
         const current = data.current || {};
         const pm25 = typeof current.pm2_5 === 'number' ? Math.round(current.pm2_5 * 10) / 10 : 25.0;
         const pm10 = typeof current.pm10 === 'number' ? Math.round(current.pm10 * 10) / 10 : 35.0;
-        const aqi = calculateIndianAqiFromPm25(pm25);
+        const aqi = Math.max(calculateIndianAqiFromPm25(pm25), calculateIndianAqiFromPm10(pm10));
         return {
           ...meta,
           aqi,

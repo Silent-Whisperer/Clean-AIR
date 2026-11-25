@@ -1,78 +1,84 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { LocationBar } from '../../src/components/LocationBar';
 import { SavedLocation } from '../../src/types';
 
 describe('LocationBar Component', () => {
-  const mockLocations: SavedLocation[] = [
-    {
-      id: 'loc-1',
-      label: 'Home',
-      cityName: 'Delhi',
-      locality: 'Anand Vihar',
-      latitude: 28.6469,
-      longitude: 77.3160,
-    },
-    {
-      id: 'loc-2',
-      label: 'Work',
-      cityName: 'Gurugram',
-      locality: 'Cyber City',
-      latitude: 28.4595,
-      longitude: 77.0266,
-    },
-  ];
+  const mockLocation: SavedLocation = {
+    id: 'loc-1',
+    label: 'Custom',
+    customName: 'GPS Verified',
+    cityName: 'Kolkata',
+    locality: 'Salt Lake',
+    latitude: 22.5867,
+    longitude: 88.4170,
+    isCurrentGps: true,
+  };
 
-  it('renders active location and triggers Locate Me and location selection', () => {
-    const handleSelect = vi.fn();
-    const handleAdd = vi.fn();
-    const handleDelete = vi.fn();
-
-    render(
-      <LocationBar
-        locations={mockLocations}
-        activeLocationId="loc-1"
-        onSelectLocation={handleSelect}
-        onAddLocation={handleAdd}
-        onDeleteLocation={handleDelete}
-        isLoading={false}
-      />
-    );
-
-    expect(screen.getByText('Delhi')).toBeInTheDocument();
-    expect(screen.getByText('(Anand Vihar)')).toBeInTheDocument();
-    expect(screen.getByText('Locate Me')).toBeInTheDocument();
-
-    const switchBtn = screen.getByText('Saved Places (2)');
-    fireEvent.click(switchBtn);
-
-    expect(screen.getByText('Manage Monitored Locations')).toBeInTheDocument();
+  beforeEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it('allows deleting locations from the modal even when only one or both exist', () => {
+  it('renders active location, Locate Me button, and city search without Saved Places', () => {
     const handleSelect = vi.fn();
-    const handleAdd = vi.fn();
-    const handleDelete = vi.fn();
 
     render(
       <LocationBar
-        locations={mockLocations}
-        activeLocationId="loc-1"
+        activeLocation={mockLocation}
         onSelectLocation={handleSelect}
-        onAddLocation={handleAdd}
-        onDeleteLocation={handleDelete}
         isLoading={false}
       />
     );
 
-    const switchBtn = screen.getByText('Saved Places (2)');
-    fireEvent.click(switchBtn);
+    expect(screen.getByText('Kolkata')).toBeInTheDocument();
+    expect(screen.getByText('(Salt Lake)')).toBeInTheDocument();
+    expect(screen.getByText('Locate Me')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search city or area...')).toBeInTheDocument();
+    expect(screen.queryByText(/Saved Places/i)).not.toBeInTheDocument();
+  });
 
-    const removeBtns = screen.getAllByTitle('Remove location');
-    expect(removeBtns.length).toBe(2);
+  it('resolves GPS coordinates via backend reverse-geocode when Locate Me is clicked', async () => {
+    const handleSelect = vi.fn();
 
-    fireEvent.click(removeBtns[0]);
-    expect(handleDelete).toHaveBeenCalledWith('loc-1');
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: vi.fn((success) =>
+          success({ coords: { latitude: 22.5726, longitude: 88.3639 } })
+        ),
+      },
+    });
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        city: 'Kolkata',
+        locality: 'Esplanade',
+        latitude: 22.5726,
+        longitude: 88.3639,
+      }),
+    }) as any;
+
+    render(
+      <LocationBar
+        activeLocation={mockLocation}
+        onSelectLocation={handleSelect}
+        isLoading={false}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Locate Me'));
+
+    await waitFor(() => {
+      expect(handleSelect).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cityName: 'Kolkata',
+          locality: 'Esplanade',
+          latitude: 22.5726,
+          longitude: 88.3639,
+        })
+      );
+    });
   });
 });

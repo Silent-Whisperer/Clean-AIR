@@ -10,6 +10,7 @@ import { getLiveMonitoringStations } from './services/stationsData';
 import { AiAgentService } from './services/aiAgentService';
 import { CommunityService } from './services/communityService';
 import { LocationService } from './services/locationService';
+import { geocodeLocationName, reverseGeocodeCoordinates } from './services/geocodingService';
 import { inspectBinaryMagicBytes } from './middleware/security';
 
 /**
@@ -29,7 +30,7 @@ export class EnvironmentalCoordinator {
     lat?: number,
     lon?: number
   ): Promise<AirQualityMetrics> {
-    const targetCity = city || 'Delhi';
+    const targetCity = city || (lat !== undefined && lon !== undefined ? 'Current Coordinates' : 'Kolkata');
     return fetchLiveAirQuality(targetCity, lat, lon);
   }
 
@@ -55,7 +56,7 @@ export class EnvironmentalCoordinator {
     const activeLoc =
       profile.locations?.find((l) => l.id === profile.activeLocationId) ||
       profile.locations?.[0];
-    const city = activeLoc?.cityName || 'Delhi';
+    const city = activeLoc?.cityName || 'Kolkata';
     const lat = activeLoc?.latitude;
     const lon = activeLoc?.longitude;
 
@@ -179,5 +180,24 @@ export class EnvironmentalCoordinator {
    */
   public static async detectLocation(clientIp?: string) {
     return LocationService.detectLocationFromIp(clientIp);
+  }
+
+  /**
+   * Reverse-geocodes GPS coordinates into municipal city and locality
+   * @param lat - Latitude in decimal degrees
+   * @param lon - Longitude in decimal degrees
+   * @returns Resolved city, locality, state, and coordinates
+   */
+  public static async reverseGeocode(lat: number, lon: number) {
+    return reverseGeocodeCoordinates(lat, lon);
+  }
+
+  /**
+   * Searches and geocodes a city or neighborhood name
+   * @param query - Search query string
+   * @returns Coordinates and formatted label, or null
+   */
+  public static async searchLocation(query: string) {
+    return geocodeLocationName(query);
   }
 }

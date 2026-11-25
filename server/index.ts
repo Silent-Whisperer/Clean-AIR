@@ -14,6 +14,7 @@ import { HouseholdProfile } from './types';
 import { config } from './config';
 
 export const app = express();
+app.set('trust proxy', 1);
 
 // Security Middlewares & Content Security Policy Hardening
 app.use(
@@ -66,11 +67,11 @@ app.get('/api/health', (_req: Request, res: Response) => {
  */
 app.get('/api/air-quality', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const city = (req.query.city as string) || 'Delhi';
+    const city = (req.query.city as string) || '';
     const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
     const lon = req.query.lon ? parseFloat(req.query.lon as string) : undefined;
 
-    const data = await EnvironmentalCoordinator.fetchAirQuality(city, lat, lon);
+    const data = await EnvironmentalCoordinator.fetchAirQuality(city || undefined, lat, lon);
     res.json(data);
   } catch (err) {
     next(err);
@@ -96,13 +97,62 @@ app.get('/api/stations', async (_req: Request, res: Response, next: NextFunction
  */
 app.get('/api/location/auto-detect', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const cfIp = req.headers['cf-connecting-ip'];
+    const realIp = req.headers['x-real-ip'];
     const rawForwarded = req.headers['x-forwarded-for'];
-    const clientIp = typeof rawForwarded === 'string'
-      ? rawForwarded.split(',')[0].trim()
-      : req.socket.remoteAddress;
+    const clientIp =
+      (typeof cfIp === 'string' && cfIp.trim()) ||
+      (typeof realIp === 'string' && realIp.trim()) ||
+      (typeof rawForwarded === 'string' ? rawForwarded.split(',')[0].trim() : undefined) ||
+      req.ip ||
+      req.socket.remoteAddress;
 
     const detected = await EnvironmentalCoordinator.detectLocation(clientIp);
     res.json(detected);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Server-Side Reverse Geocoding Endpoint for GPS Coordinates
+ * @route GET /api/location/reverse-geocode
+ */
+app.get('/api/location/reverse-geocode', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const lat = parseFloat(req.query.lat as string);
+    const lon = parseFloat(req.query.lon as string);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      res.status(400).json({ error: 'Valid latitude and longitude query parameters are required.' });
+      return;
+    }
+
+    const resolved = await EnvironmentalCoordinator.reverseGeocode(lat, lon);
+    res.json(resolved);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * City / Locality Geocoding Search Endpoint
+ * @route GET /api/location/search
+ */
+app.get('/api/location/search', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const q = ((req.query.q as string) || '').trim();
+    if (!q || q.length > 120) {
+      res.status(400).json({ error: 'A valid search query (1-120 chars) is required.' });
+      return;
+    }
+
+    const result = await EnvironmentalCoordinator.searchLocation(q);
+    if (!result) {
+      res.status(404).json({ error: 'Location not found.' });
+      return;
+    }
+    res.json(result);
   } catch (err) {
     next(err);
   }

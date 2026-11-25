@@ -143,10 +143,10 @@ export function validateHouseholdProfileInput(req: Request, res: Response, next:
     profile.locations = [
       {
         id: 'loc-default',
-        label: 'Home',
-        cityName: 'Delhi',
-        latitude: 28.6139,
-        longitude: 77.2090,
+        label: 'Custom',
+        cityName: 'Kolkata',
+        latitude: 22.5726,
+        longitude: 88.3639,
       },
     ];
     profile.activeLocationId = 'loc-default';

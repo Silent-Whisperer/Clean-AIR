@@ -1,3 +1,4 @@
+import { config } from '../config';
 
 /**
  * Common Indian city & district coordinates index
@@ -51,39 +52,62 @@ const INDIAN_DISTRICT_COORDINATES: Record<string, { lat: number; lon: number; na
 };
 
 /**
- * Geocodes an unknown city/locality dynamically via OpenStreetMap Nominatim
+ * Geocodes a city or locality name to geographic coordinates
+ * @param name - City, district, or neighborhood query
+ * @returns Coordinates and formatted label, or null if unresolved
  */
-export async function geocodeLocationName(name: string): Promise<{ lat: number; lon: number; label: string } | null> {
+export async function geocodeLocationName(
+  name: string
+): Promise<{ lat: number; lon: number; label: string; city: string; locality?: string } | null> {
   const clean = name.trim().replace(/[<>]/g, '');
   if (!clean) return null;
 
   const key = clean.toLowerCase().replace(/[^a-z]/g, '');
   if (INDIAN_DISTRICT_COORDINATES[key]) {
     const item = INDIAN_DISTRICT_COORDINATES[key];
-    return { lat: item.lat, lon: item.lon, label: `${item.name}, ${item.state}` };
+    return {
+      lat: item.lat,
+      lon: item.lon,
+      label: `${item.name}, ${item.state}`,
+      city: item.name,
+      locality: item.state,
+    };
   }
 
-  // Check partial match
   for (const [k, v] of Object.entries(INDIAN_DISTRICT_COORDINATES)) {
     if (key.includes(k) || k.includes(key)) {
-      return { lat: v.lat, lon: v.lon, label: `${v.name}, ${v.state}` };
+      return {
+        lat: v.lat,
+        lon: v.lon,
+        label: `${v.name}, ${v.state}`,
+        city: v.name,
+        locality: v.state,
+      };
     }
   }
 
-  // Dynamic geocoding
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(clean)}&limit=1`,
-      { headers: { 'User-Agent': 'ClearAir-Environmental-Health/2.0' } }
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(clean)}&addressdetails=1&limit=1`,
+      {
+        headers: { 'User-Agent': 'ClearAir-Environmental-Health/2.0' },
+        signal: AbortSignal.timeout(5000),
+      }
     );
     if (res.ok) {
       const data = (await res.json()) as any[];
       if (Array.isArray(data) && data.length > 0) {
         const item = data[0];
+        const addr = item.address || {};
+        const city =
+          addr.city || addr.town || addr.village || addr.municipality || addr.state_district || item.name || clean;
+        const locality = addr.suburb || addr.neighbourhood || addr.state || undefined;
         return {
           lat: parseFloat(item.lat),
           lon: parseFloat(item.lon),
-          label: item.name || clean,
+          label: item.display_name || item.name || clean,
+          city,
+          locality: locality !== city ? locality : undefined,
         };
       }
     }
@@ -95,37 +119,162 @@ export async function geocodeLocationName(name: string): Promise<{ lat: number; 
 }
 
 /**
- * Resolves accurate coordinates and matching label
- * Checks whether old Anand Vihar coordinates (28.6469, 77.3160) are being passed for a non-Delhi query!
+ * Reverse-geocodes exact GPS coordinates into municipal city and neighborhood locality
+ * @param lat - Latitude in decimal degrees
+ * @param lon - Longitude in decimal degrees
+ * @returns Resolved city, locality, state, and coordinates
  */
-export async function resolveExactCoordinates(query: string, lat?: number, lon?: number) {
+export async function reverseGeocodeCoordinates(
+  lat: number,
+  lon: number
+): Promise<{ city: string; locality?: string; state?: string; latitude: number; longitude: number; source: string }> {
+  // 1. Google Maps Geocoding (if configured)
+  if (config.googleMapsApiKey) {
+    try {
+      const gRes = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${encodeURIComponent(config.googleMapsApiKey)}`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+      if (gRes.ok) {
+        const gData = (await gRes.json()) as any;
+        if (gData.status === 'OK' && Array.isArray(gData.results) && gData.results.length > 0) {
+          const result = gData.results[0];
+          const getComp = (type: string) =>
+            result.address_components?.find((c: any) => Array.isArray(c.types) && c.types.includes(type))?.long_name;
+          const city =
+            getComp('locality') ||
+            getComp('administrative_area_level_2') ||
+            getComp('administrative_area_level_1') ||
+            'Current Area';
+          const locality =
+            getComp('sublocality_level_1') ||
+            getComp('sublocality') ||
+            getComp('neighborhood') ||
+            getComp('route');
+          const state = getComp('administrative_area_level_1');
+          return { city, locality, state, latitude: lat, longitude: lon, source: 'google_maps' };
+        }
+      }
+    } catch {
+      // fall through to Nominatim
+    }
+  }
+
+  // 2. OpenStreetMap Nominatim (server-side with valid User-Agent)
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=16&addressdetails=1`,
+      {
+        headers: { 'User-Agent': 'ClearAir-Environmental-Health/2.0 (public-health-telemetry)' },
+        signal: AbortSignal.timeout(5000),
+      }
+    );
+    if (res.ok) {
+      const data = (await res.json()) as any;
+      const addr = data.address || {};
+      const city =
+        addr.city ||
+        addr.town ||
+        addr.village ||
+        addr.municipality ||
+        addr.city_district ||
+        addr.state_district ||
+        addr.county ||
+        addr.state;
+
+      const localityParts = [
+        addr.suburb || addr.neighbourhood || addr.residential || addr.quarter,
+        addr.city_district && addr.city_district !== city ? addr.city_district : undefined,
+      ].filter(Boolean);
+      const uniqueParts = Array.from(new Set(localityParts));
+      const locality =
+        uniqueParts.length > 0
+          ? uniqueParts.slice(0, 2).join(', ')
+          : addr.road || addr.state_district || addr.state || undefined;
+
+      if (city) {
+        return {
+          city,
+          locality: locality && locality !== city ? locality : undefined,
+          state: addr.state,
+          latitude: lat,
+          longitude: lon,
+          source: 'nominatim',
+        };
+      }
+    }
+  } catch {
+    // fall through to BigDataCloud
+  }
+
+  // 3. BigDataCloud fallback
+  try {
+    const bdcRes = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (bdcRes.ok) {
+      const bdcData = (await bdcRes.json()) as any;
+      const city = bdcData.city || bdcData.locality || bdcData.principalSubdivision;
+      if (city) {
+        return {
+          city,
+          locality: bdcData.locality && bdcData.locality !== city ? bdcData.locality : bdcData.principalSubdivision,
+          state: bdcData.principalSubdivision,
+          latitude: lat,
+          longitude: lon,
+          source: 'bigdatacloud',
+        };
+      }
+    }
+  } catch {
+    // fall through
+  }
+
+  return {
+    city: `GPS (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)`,
+    locality: 'Detected Coordinates',
+    latitude: lat,
+    longitude: lon,
+    source: 'coordinates',
+  };
+}
+
+/**
+ * Resolves accurate coordinates and matching label for telemetry queries
+ * @param query - City or locality name
+ * @param lat - Optional latitude
+ * @param lon - Optional longitude
+ * @returns Resolved latitude, longitude, and display label
+ */
+export async function resolveExactCoordinates(
+  query: string,
+  lat?: number,
+  lon?: number
+): Promise<{ lat: number; lon: number; label: string }> {
   const normalizedQuery = (query || '').trim().toLowerCase();
 
-  // If coordinates are explicitly given, verify they actually belong to the query city!
   if (lat !== undefined && lon !== undefined && !isNaN(lat) && !isNaN(lon) && (lat !== 0 || lon !== 0)) {
-    // Detect if Anand Vihar / Delhi coordinates were inherited in local storage for a different city/state (e.g. West Bengal, Kolkata, Mumbai)
-    const isDelhiOrAnandViharCoords =
+    const isLegacyDelhiCoords =
       (Math.abs(lat - 28.6469) < 0.05 && Math.abs(lon - 77.3160) < 0.05) ||
       (Math.abs(lat - 28.6139) < 0.05 && Math.abs(lon - 77.2090) < 0.05);
 
     const queryMentionsDelhi =
+      !normalizedQuery ||
       normalizedQuery.includes('delhi') ||
       normalizedQuery.includes('anand vihar') ||
       normalizedQuery.includes('noida') ||
       normalizedQuery.includes('ghaziabad');
 
-    // Only trust coordinates if they don't mismatch!
-    if (!isDelhiOrAnandViharCoords || queryMentionsDelhi) {
-      return { lat, lon, label: query || 'Monitored Coordinates' };
+    if (!isLegacyDelhiCoords || queryMentionsDelhi) {
+      return { lat, lon, label: query || `${lat.toFixed(2)}, ${lon.toFixed(2)}` };
     }
   }
 
-  // Geocode query to get the true geographic location
   const geocoded = await geocodeLocationName(query);
   if (geocoded) {
     return { lat: geocoded.lat, lon: geocoded.lon, label: geocoded.label };
   }
 
-  // Default to Kolkata (user's real IP origin in India) if query not found
   return { lat: 22.5726, lon: 88.3639, label: query || 'Kolkata, West Bengal' };
 }

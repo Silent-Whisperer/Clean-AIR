@@ -204,4 +204,22 @@ describe('ClearAir Backend Architecture & Indian CPCB Standards Suite', () => {
     expect(typeof res.body.city).toBe('string');
     expect(res.body.city.length).toBeGreaterThan(0);
   }, 10000);
+
+  it('GET /api/location/reverse-geocode resolves coordinates and rejects invalid inputs', async () => {
+    const badRes = await request(app).get('/api/location/reverse-geocode?lat=999&lon=88');
+    expect(badRes.status).toBe(400);
+
+    const res = await request(app).get('/api/location/reverse-geocode?lat=22.5726&lon=88.3639');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('city');
+    expect(res.body.latitude).toBeCloseTo(22.5726, 2);
+    expect(res.body.longitude).toBeCloseTo(88.3639, 2);
+  }, 10000);
+
+  it('GET /api/location/search geocodes known Indian cities accurately', async () => {
+    const res = await request(app).get('/api/location/search?q=Mumbai');
+    expect(res.status).toBe(200);
+    expect(res.body.city).toBe('Mumbai');
+    expect(res.body.lat).toBeCloseTo(19.076, 1);
+  });
 });

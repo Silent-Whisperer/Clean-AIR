@@ -1,220 +1,181 @@
 import React, { useState } from 'react';
 import { SavedLocation } from '../types';
-import {
-  Navigation,
-  MapPin,
-  ChevronDown,
-  Building,
-  Home,
-  GraduationCap,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react';
-import { LocationModal } from './LocationModal';
+import { Navigation, MapPin, Loader2, AlertCircle, Search } from 'lucide-react';
 
 interface LocationBarProps {
-  locations: SavedLocation[];
-  activeLocationId: string;
+  activeLocation: SavedLocation;
   onSelectLocation: (location: SavedLocation) => void;
-  onAddLocation: (newLoc: SavedLocation) => void;
-  onDeleteLocation: (id: string) => void;
   isLoading: boolean;
 }
 
+/**
+ * Location Intelligence Bar
+ * @description Displays active monitored location, high-accuracy GPS "Locate Me", and instant city/area search
+ */
 export const LocationBar: React.FC<LocationBarProps> = ({
-  locations,
-  activeLocationId,
+  activeLocation,
   onSelectLocation,
-  onAddLocation,
-  onDeleteLocation,
   isLoading,
 }) => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
 
-  const activeLoc = locations.find((l) => l.id === activeLocationId) || locations[0];
-
-  const handleLocateMe = async () => {
-    setLocateError(null);
-    setIsLocating(true);
-
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-
-    // Strategy 1: High-Accuracy GPS Hardware Positioning
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const { latitude, longitude } = pos.coords;
-          let detectedCity = 'Kolkata';
-          let detectedLocality = 'Current Area';
-
-          // Try Google Maps Geocoding first if key available
-          let resolved = false;
-          if (apiKey) {
-            try {
-              const gRes = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
-              );
-              if (gRes.ok) {
-                const gData = await gRes.json();
-                if (gData.status === 'OK' && gData.results?.length > 0) {
-                  const result = gData.results[0];
-                  const getComp = (type: string) =>
-                    result.address_components.find((c: any) => c.types.includes(type))?.long_name;
-
-                  detectedCity =
-                    getComp('locality') ||
-                    getComp('administrative_area_level_2') ||
-                    getComp('administrative_area_level_1') ||
-                    'Current Area';
-                  detectedLocality =
-                    getComp('sublocality') ||
-                    getComp('neighborhood') ||
-                    getComp('route') ||
-                    '';
-                  resolved = true;
-                }
-              }
-            } catch {
-              // fallback to nominatim
-            }
-          }
-
-          if (!resolved) {
-            // Free Tier A: OpenStreetMap Nominatim with granular neighborhood and sub-locality extraction
-            try {
-              const res = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
-                { headers: { 'User-Agent': 'ClearAir-Environmental-Health/1.0' } }
-              );
-              if (res.ok) {
-                const data = await res.json();
-                const addr = data.address || {};
-                detectedCity = addr.city || addr.town || addr.state_district || addr.state || 'Kolkata';
-
-                // Assemble precise micro-neighborhood: e.g. "Lake Terrace, Santoshpur" or "Santoshpur, Jadavpur"
-                const parts = [
-                  addr.road || addr.residential || addr.leisure || addr.amenity,
-                  addr.neighbourhood,
-                  addr.suburb,
-                ].filter(Boolean);
-
-                if (parts.length > 0) {
-                  // Remove duplicates if any
-                  const uniqueParts = Array.from(new Set(parts));
-                  detectedLocality = uniqueParts.slice(0, 2).join(', ');
-                } else {
-                  detectedLocality = addr.county || addr.state_district || '';
-                }
-                resolved = true;
-              }
-            } catch {
-              // fallback to BigDataCloud
-            }
-          }
-
-          if (!resolved) {
-            // Free Tier B: BigDataCloud Reverse Geocoding
-            try {
-              const bdcRes = await fetch(
-                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-              );
-              if (bdcRes.ok) {
-                const bdcData = await bdcRes.json();
-                detectedCity = bdcData.city || bdcData.locality || bdcData.principalSubdivision || 'Current City';
-                detectedLocality = bdcData.locality || bdcData.principalSubdivision || '';
-              }
-            } catch {
-              detectedCity = 'Current GPS Area';
-            }
-          }
-
-          const gpsLoc: SavedLocation = {
-            id: `gps-${Date.now()}`,
-            label: 'Custom',
-            customName: 'Current Location',
-            cityName: detectedCity,
-            locality: detectedLocality || undefined,
-            latitude,
-            longitude,
-            isCurrentGps: true,
-          };
-
-          onAddLocation(gpsLoc);
-          onSelectLocation(gpsLoc);
-          setIsLocating(false);
-        },
-        async (err) => {
-          // Strategy 2: If Hardware GPS is blocked/unavailable (e.g. Chrome Incognito), fallback to Server-Side IP Geolocation
-          try {
-            const ipRes = await fetch('/api/location/auto-detect');
-            if (ipRes.ok) {
-              const ipData = await ipRes.json();
-              if (ipData.city && ipData.latitude && ipData.longitude) {
-                const detectedLoc: SavedLocation = {
-                  id: `ip-${Date.now()}`,
-                  label: 'Home',
-                  customName: 'Current Location',
-                  cityName: ipData.city,
-                  locality: ipData.region ? `${ipData.region} (Network Detected)` : 'Current Area',
-                  latitude: parseFloat(ipData.latitude),
-                  longitude: parseFloat(ipData.longitude),
-                  isCurrentGps: true,
-                };
-                onAddLocation(detectedLoc);
-                onSelectLocation(detectedLoc);
-                setIsLocating(false);
-                return;
-              }
-            }
-          } catch (serverErr) {
-            console.warn('Server IP detection failed:', serverErr);
-          }
-
-          setIsLocating(false);
-          if (err.code === err.PERMISSION_DENIED) {
-            setLocateError('Browser location permission was blocked. Please tap the location pin in your address bar to allow GPS, or choose your city from Saved Places.');
-          } else if (err.code === err.POSITION_UNAVAILABLE) {
-            setLocateError('GPS hardware signal unavailable. Please select your city manually.');
-          } else {
-            setLocateError('Unable to detect coordinates. Please select your city from the list.');
-          }
-        },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-      );
-      return;
+  const resolveAndApplyCoords = async (latitude: number, longitude: number) => {
+    try {
+      const res = await fetch(`/api/location/reverse-geocode?lat=${latitude}&lon=${longitude}`);
+      if (res.ok) {
+        const data = await res.json();
+        const gpsLoc: SavedLocation = {
+          id: `gps-${Date.now()}`,
+          label: 'Custom',
+          customName: 'GPS Verified',
+          cityName: data.city || `GPS (${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°)`,
+          locality: data.locality || undefined,
+          latitude,
+          longitude,
+          isCurrentGps: true,
+        };
+        onSelectLocation(gpsLoc);
+        setIsLocating(false);
+        return;
+      }
+    } catch {
+      // fall through to raw coordinates
     }
 
-    setLocateError('Browser geolocation is not supported on this device.');
+    onSelectLocation({
+      id: `gps-${Date.now()}`,
+      label: 'Custom',
+      customName: 'GPS Verified',
+      cityName: `GPS (${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°)`,
+      locality: 'Detected Coordinates',
+      latitude,
+      longitude,
+      isCurrentGps: true,
+    });
     setIsLocating(false);
   };
 
-  const getLabelIcon = (label: string) => {
-    switch (label) {
-      case 'Home':
-        return <Home className="w-3.5 h-3.5 text-stone-600" />;
-      case 'Work':
-        return <Building className="w-3.5 h-3.5 text-stone-600" />;
-      case 'College':
-        return <GraduationCap className="w-3.5 h-3.5 text-stone-600" />;
-      default:
-        return <MapPin className="w-3.5 h-3.5 text-stone-600" />;
+  const fallbackToServerIp = async (geoError?: GeolocationPositionError) => {
+    try {
+      const ipRes = await fetch('/api/location/auto-detect');
+      if (ipRes.ok) {
+        const ipData = await ipRes.json();
+        if (ipData.city && ipData.latitude && ipData.longitude) {
+          onSelectLocation({
+            id: `ip-${Date.now()}`,
+            label: 'Custom',
+            customName: 'Network Detected',
+            cityName: ipData.city,
+            locality: ipData.region ? `${ipData.region} (Approximate IP)` : 'Network Detected',
+            latitude: parseFloat(ipData.latitude),
+            longitude: parseFloat(ipData.longitude),
+            isCurrentGps: true,
+          });
+          if (geoError && geoError.code === geoError.PERMISSION_DENIED) {
+            setLocateError(
+              'Browser GPS permission was denied, so an approximate network IP location was used. Allow location access or search your city directly.'
+            );
+          }
+          setIsLocating(false);
+          return;
+        }
+      }
+    } catch (serverErr) {
+      console.warn('Server IP detection failed:', serverErr);
+    }
+
+    setIsLocating(false);
+    if (geoError && geoError.code === geoError.PERMISSION_DENIED) {
+      setLocateError(
+        'Browser location permission was blocked. Please allow location access in your browser or search your city.'
+      );
+    } else {
+      setLocateError('Unable to detect coordinates automatically. Please search your city or area.');
+    }
+  };
+
+  const handleLocateMe = () => {
+    setLocateError(null);
+    setIsLocating(true);
+
+    if (!navigator.geolocation) {
+      void fallbackToServerIp();
+      return;
+    }
+
+    // Attempt 1: High-accuracy GPS
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        void resolveAndApplyCoords(pos.coords.latitude, pos.coords.longitude);
+      },
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          void fallbackToServerIp(err);
+          return;
+        }
+
+        // Attempt 2: Standard network/Wi-Fi positioning (crucial for Windows/macOS desktops)
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            void resolveAndApplyCoords(pos.coords.latitude, pos.coords.longitude);
+          },
+          (fallbackErr) => {
+            void fallbackToServerIp(fallbackErr);
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    );
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    setLocateError(null);
+    setIsSearching(true);
+    try {
+      const res = await fetch(`/api/location/search?q=${encodeURIComponent(query)}`);
+      if (!res.ok) {
+        setLocateError(`Could not find "${query}". Try a city or district name like Kolkata, Mumbai, or Jaipur.`);
+        return;
+      }
+      const data = await res.json();
+      onSelectLocation({
+        id: `search-${Date.now()}`,
+        label: 'Custom',
+        customName: 'Searched Area',
+        cityName: data.city || query,
+        locality: data.locality || undefined,
+        latitude: Number(data.lat),
+        longitude: Number(data.lon),
+        isCurrentGps: true,
+      });
+      setSearchQuery('');
+    } catch {
+      setLocateError('Unable to search location right now. Please try again.');
+    } finally {
+      setIsSearching(false);
     }
   };
 
   return (
     <div className="relative mb-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-stone-200/90 shadow-2xs">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-stone-200/90 shadow-2xs">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center shrink-0">
-            {getLabelIcon(activeLoc.label)}
+            <MapPin className="w-4 h-4 text-emerald-800" aria-hidden="true" />
           </div>
 
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-100 text-stone-700">
-                {activeLoc.customName || activeLoc.label}
+                {activeLocation.customName || 'Monitored Area'}
               </span>
               <span className="text-xs text-stone-400">•</span>
               <span className="text-xs font-semibold text-emerald-900">
@@ -222,24 +183,47 @@ export const LocationBar: React.FC<LocationBarProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <h2 className="text-base sm:text-lg font-serif font-bold text-stone-900 leading-tight">
-                {activeLoc.cityName}
+                {activeLocation.cityName}
               </h2>
-              {activeLoc.locality && (
+              {activeLocation.locality && (
                 <span className="text-xs text-stone-500 font-normal">
-                  ({activeLoc.locality})
+                  ({activeLocation.locality})
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
+          <form onSubmit={handleSearch} className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+            <label htmlFor="location-search-input" className="sr-only">
+              Search city or area
+            </label>
+            <input
+              id="location-search-input"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search city or area..."
+              className="w-full sm:w-48 min-h-[40px] px-3 py-2 text-xs bg-stone-50 border border-stone-200/90 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+            />
+            <button
+              type="submit"
+              disabled={isSearching || !searchQuery.trim()}
+              aria-label="Search location"
+              className="inline-flex items-center justify-center min-h-[40px] px-3 py-2 text-xs font-semibold bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl border border-stone-200/80 disabled:opacity-50 transition-all"
+            >
+              {isSearching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+            </button>
+          </form>
+
           <button
+            type="button"
             onClick={handleLocateMe}
             disabled={isLocating}
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 text-xs font-semibold bg-emerald-800 text-white rounded-xl hover:bg-emerald-900 active:scale-95 disabled:opacity-50 transition-all shadow-2xs"
+            className="inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3.5 py-2 text-xs font-semibold bg-emerald-800 text-white rounded-xl hover:bg-emerald-900 active:scale-95 disabled:opacity-50 transition-all shadow-2xs"
             title="Detect air quality at your precise coordinates"
           >
             {isLocating ? (
@@ -249,34 +233,18 @@ export const LocationBar: React.FC<LocationBarProps> = ({
             )}
             <span>{isLocating ? 'Detecting GPS...' : 'Locate Me'}</span>
           </button>
-
-          <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 min-h-[40px] px-3 py-2 text-xs font-medium bg-stone-100 hover:bg-stone-200 active:scale-95 text-stone-800 rounded-xl transition-all border border-stone-200/80"
-          >
-            <span>Saved Places ({locations.length})</span>
-            <ChevronDown className="w-3.5 h-3.5 text-stone-500" />
-          </button>
         </div>
       </div>
 
       {locateError && (
-        <div className="mt-2 p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2">
+        <div
+          role="status"
+          className="mt-2 p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2"
+        >
           <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
           <span>{locateError}</span>
         </div>
       )}
-
-      <LocationModal
-        isOpen={dropdownOpen}
-        onClose={() => setDropdownOpen(false)}
-        locations={locations}
-        activeLocationId={activeLocationId}
-        onSelectLocation={onSelectLocation}
-        onAddLocation={onAddLocation}
-        onDeleteLocation={onDeleteLocation}
-        getLabelIcon={getLabelIcon}
-      />
     </div>
   );
 };
