@@ -9,6 +9,7 @@ import { fetchLiveAirQuality } from './services/airQualityService';
 import { getLiveMonitoringStations } from './services/stationsData';
 import { AiAgentService } from './services/aiAgentService';
 import { CommunityService } from './services/communityService';
+import { LocationService } from './services/locationService';
 import { inspectBinaryMagicBytes } from './middleware/security';
 
 /**
@@ -169,5 +170,14 @@ export class EnvironmentalCoordinator {
     filename: string
   ): { isValid: boolean; reason?: string; detectedFormat?: string } {
     return inspectBinaryMagicBytes(buffer, filename);
+  }
+
+  /**
+   * Resolves client IP to geographic coordinates and city name
+   * @param clientIp - Optional client IP
+   * @returns Detected location object
+   */
+  public static async detectLocation(clientIp?: string) {
+    return LocationService.detectLocationFromIp(clientIp);
   }
 }

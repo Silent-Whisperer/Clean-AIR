@@ -10,6 +10,8 @@ import { CommunityMode } from './components/CommunityMode';
 import { ConversationalAssistant } from './components/ConversationalAssistant';
 import { HouseholdModal } from './components/HouseholdModal';
 import { OnboardingFlow } from './components/OnboardingFlow';
+import { Footer } from './components/Footer';
+import { useAutoLocation } from './hooks/useAutoLocation';
 import { loadStoredProfile, saveStoredProfile, DEFAULT_INITIAL_PROFILE } from './utils/profileStorage';
 import {
   HouseholdProfile,
@@ -42,6 +44,9 @@ export const App: React.FC = () => {
     saveStoredProfile(profile);
     fetchTelemetryAndRecommendations(profile);
   }, [profile.activeLocationId, profile.locations]);
+
+  // Auto-detect real user municipal location on initial startup via network resolution
+  useAutoLocation(profile, setProfile);
 
   const fetchTelemetryAndRecommendations = async (currentProfile: HouseholdProfile) => {
     setLoading(true);
@@ -248,23 +253,7 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Editorial Public Health Footer */}
-      <footer className="border-t border-stone-200 bg-white py-8 mt-12 text-xs text-stone-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <span className="font-serif font-black text-stone-900">ClearAir</span> — Severe Smog & Public Health Technology Platform.
-            <span className="block sm:inline sm:ml-2 text-stone-400">
-              Telemetry powered by CPCB CAAQMS & Copernicus Atmospheric Monitoring.
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4 text-stone-400">
-            <span>CPCB NAQI Standards</span>
-            <span>•</span>
-            <span>Zero Data Fabrication</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Profile Settings Modal */}
       <HouseholdModal

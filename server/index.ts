@@ -91,6 +91,24 @@ app.get('/api/stations', async (_req: Request, res: Response, next: NextFunction
 });
 
 /**
+ * Real Network IP Location Auto-Detection Endpoint
+ * @route GET /api/location/auto-detect
+ */
+app.get('/api/location/auto-detect', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const rawForwarded = req.headers['x-forwarded-for'];
+    const clientIp = typeof rawForwarded === 'string'
+      ? rawForwarded.split(',')[0].trim()
+      : req.socket.remoteAddress;
+
+    const detected = await EnvironmentalCoordinator.detectLocation(clientIp);
+    res.json(detected);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * Personalized Agent Intelligence endpoint
  * @route POST /api/agent/recommendations
  */

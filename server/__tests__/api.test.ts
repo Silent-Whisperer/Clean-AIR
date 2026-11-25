@@ -194,4 +194,14 @@ describe('ClearAir Backend Architecture & Indian CPCB Standards Suite', () => {
     expect(cleanRes.status).toBe(200);
     expect(cleanRes.body.status).toBe('success');
   });
+
+  it('GET /api/location/auto-detect returns detected municipal city and coordinates', async () => {
+    const res = await request(app).get('/api/location/auto-detect');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('city');
+    expect(res.body).toHaveProperty('latitude');
+    expect(res.body).toHaveProperty('longitude');
+    expect(typeof res.body.city).toBe('string');
+    expect(res.body.city.length).toBeGreaterThan(0);
+  }, 10000);
 });

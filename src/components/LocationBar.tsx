@@ -146,9 +146,9 @@ export const LocationBar: React.FC<LocationBarProps> = ({
           setIsLocating(false);
         },
         async (err) => {
-          // Strategy 2: If Hardware GPS is blocked/unavailable, fallback to IP Geolocation
+          // Strategy 2: If Hardware GPS is blocked/unavailable (e.g. Chrome Incognito), fallback to Server-Side IP Geolocation
           try {
-            const ipRes = await fetch('https://ipapi.co/json/');
+            const ipRes = await fetch('/api/location/auto-detect');
             if (ipRes.ok) {
               const ipData = await ipRes.json();
               if (ipData.city && ipData.latitude && ipData.longitude) {
@@ -157,7 +157,7 @@ export const LocationBar: React.FC<LocationBarProps> = ({
                   label: 'Home',
                   customName: 'Current Location',
                   cityName: ipData.city,
-                  locality: ipData.region ? `${ipData.region}, ${ipData.postal || ''}`.trim() : undefined,
+                  locality: ipData.region ? `${ipData.region} (Network Detected)` : 'Current Area',
                   latitude: parseFloat(ipData.latitude),
                   longitude: parseFloat(ipData.longitude),
                   isCurrentGps: true,
@@ -168,17 +168,17 @@ export const LocationBar: React.FC<LocationBarProps> = ({
                 return;
               }
             }
-          } catch {
-            // failed IP lookup
+          } catch (serverErr) {
+            console.warn('Server IP detection failed:', serverErr);
           }
 
           setIsLocating(false);
           if (err.code === err.PERMISSION_DENIED) {
-            setLocateError('Location permission denied. Please allow location access in your browser or search your city.');
+            setLocateError('Browser location permission was blocked. Please tap the location pin in your address bar to allow GPS, or choose your city from Saved Places.');
           } else if (err.code === err.POSITION_UNAVAILABLE) {
-            setLocateError('GPS signal unavailable. Please search your city manually.');
+            setLocateError('GPS hardware signal unavailable. Please select your city manually.');
           } else {
-            setLocateError('Unable to detect location. Please select your city from the list.');
+            setLocateError('Unable to detect coordinates. Please select your city from the list.');
           }
         },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
