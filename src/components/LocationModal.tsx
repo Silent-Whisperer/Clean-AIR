@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SavedLocation } from '../types';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface LocationModalProps {
   isOpen: boolean;
@@ -207,58 +207,62 @@ export const LocationModal: React.FC<LocationModalProps> = ({
           return (
             <div
               key={loc.id}
-              role="button"
-              tabIndex={0}
-              aria-label={`Select location ${loc.cityName}${loc.locality ? ` ${loc.locality}` : ''}`}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onSelectLocation(loc);
-                  onClose();
-                }
-              }}
-              onClick={() => {
-                onSelectLocation(loc);
-                onClose();
-              }}
-              className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+              className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between transition-all ${
                 isSelected
                   ? 'bg-emerald-50/60 border-emerald-300 ring-1 ring-emerald-200'
                   : 'bg-white border-stone-200 hover:border-stone-300 hover:bg-stone-50'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-stone-100 text-stone-700">
+              {/* Clickable Selection Target */}
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label={`Select location ${loc.cityName}${loc.locality ? ` ${loc.locality}` : ''}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectLocation(loc);
+                    onClose();
+                  }
+                }}
+                onClick={() => {
+                  onSelectLocation(loc);
+                  onClose();
+                }}
+                className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
+              >
+                <div className="p-1.5 rounded-lg bg-stone-100 text-stone-700 shrink-0">
                   {getLabelIcon(loc.label)}
                 </div>
-                <div>
-                  <div className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-stone-900 flex items-center gap-1.5 truncate">
                     <span>{loc.cityName}</span>
                     {loc.locality && (
-                      <span className="text-[11px] text-stone-500 font-normal">
+                      <span className="text-[11px] text-stone-500 font-normal truncate">
                         ({loc.locality})
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] text-stone-500 uppercase tracking-wider">
+                  <span className="text-[10px] text-stone-500 uppercase tracking-wider block">
                     {loc.customName || loc.label}
                   </span>
                 </div>
               </div>
 
-              {locations.length > 1 && (
-                <button
-                  type="button"
-                  aria-label={`Remove location ${loc.cityName}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteLocation(loc.id);
-                  }}
-                  className="p-1 text-stone-400 hover:text-rose-600 rounded text-xs"
-                >
-                  ✕
-                </button>
-              )}
+              {/* Dedicated Delete / Remove Target */}
+              <button
+                type="button"
+                aria-label={`Remove location ${loc.cityName}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onDeleteLocation(loc.id);
+                }}
+                className="p-1.5 ml-1 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-xs shrink-0 flex items-center justify-center min-w-[32px] min-h-[32px]"
+                title="Remove location"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           );
         })}

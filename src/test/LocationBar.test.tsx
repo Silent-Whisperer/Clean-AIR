@@ -49,4 +49,30 @@ describe('LocationBar Component', () => {
 
     expect(screen.getByText('Manage Monitored Locations')).toBeInTheDocument();
   });
+
+  it('allows deleting locations from the modal even when only one or both exist', () => {
+    const handleSelect = vi.fn();
+    const handleAdd = vi.fn();
+    const handleDelete = vi.fn();
+
+    render(
+      <LocationBar
+        locations={mockLocations}
+        activeLocationId="loc-1"
+        onSelectLocation={handleSelect}
+        onAddLocation={handleAdd}
+        onDeleteLocation={handleDelete}
+        isLoading={false}
+      />
+    );
+
+    const switchBtn = screen.getByText('Saved Places (2)');
+    fireEvent.click(switchBtn);
+
+    const removeBtns = screen.getAllByTitle('Remove location');
+    expect(removeBtns.length).toBe(2);
+
+    fireEvent.click(removeBtns[0]);
+    expect(handleDelete).toHaveBeenCalledWith('loc-1');
+  });
 });

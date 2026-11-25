@@ -91,12 +91,28 @@ export const App: React.FC = () => {
   };
 
   const handleDeleteLocation = (id: string) => {
-    if (profile.locations.length <= 1) return;
     const remaining = profile.locations.filter((l) => l.id !== id);
+    if (remaining.length === 0) {
+      // If user deletes the last location, reset to clean default Delhi station
+      const defaultLoc: SavedLocation = {
+        id: `loc-default-${Date.now()}`,
+        label: 'Home',
+        cityName: 'Delhi',
+        locality: 'Central (CPCB Primary Station)',
+        latitude: 28.6139,
+        longitude: 77.2090,
+      };
+      setProfile({
+        ...profile,
+        locations: [defaultLoc],
+        activeLocationId: defaultLoc.id,
+      });
+      return;
+    }
     const updated = {
       ...profile,
       locations: remaining,
-      activeLocationId: remaining[0].id,
+      activeLocationId: profile.activeLocationId === id ? remaining[0].id : profile.activeLocationId,
     };
     setProfile(updated);
   };
