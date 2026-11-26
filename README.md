@@ -130,16 +130,19 @@ ClearAir implements multi-layered enterprise defensive controls:
 # 1. Install dependencies
 npm install
 
-# 2. Run dual-layer Vitest test suite (Backend & Frontend)
+# 2. Run linter (oxlint)
+npm run lint
+
+# 3. Run dual-layer Vitest test suite (Backend & Frontend)
 npm test
 
-# 3. Build production bundle (TypeScript & Vite check)
+# 4. Build production bundle (TypeScript & Vite check)
 npm run build
 
-# 4. Start backend API server (port 3001)
-npx tsx server/server.ts
+# 5. Start backend API server (port 3001)
+npm start
 
-# 5. Start frontend preview server (port 5173)
+# 6. Start frontend preview server (port 5173)
 npm run preview
 ```
 

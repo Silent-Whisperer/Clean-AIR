@@ -175,6 +175,7 @@ export const ConversationalAssistant: React.FC<ConversationalAssistantProps> = (
                       {msg.suggestedFollowUps.map((item, fIdx) => (
                         <button
                           key={fIdx}
+                          type="button"
                           onClick={() => handleSend(item)}
                           disabled={isLoading}
                           className="text-[11px] bg-white border border-stone-300 text-stone-700 hover:bg-stone-50 px-2.5 py-1 rounded-lg text-left transition-colors"
@@ -212,6 +213,7 @@ export const ConversationalAssistant: React.FC<ConversationalAssistantProps> = (
       >
         <input
           type="text"
+          aria-label="Ask a question about today's air quality"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about today's smog, mask types, or room ventilation..."
