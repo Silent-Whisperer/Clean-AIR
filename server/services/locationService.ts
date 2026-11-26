@@ -98,9 +98,8 @@ export class LocationService {
       const res = await fetch(fallbackUrl, { signal: AbortSignal.timeout(4000) });
       if (res.ok) {
         const data = (await res.json()) as {
-          success?: boolean;
-          city?: string;
-          region?: string;
+          cityName?: string;
+          regionName?: string;
           latitude?: number | string;
           longitude?: number | string;
         };
@@ -108,8 +107,8 @@ export class LocationService {
           return {
             city: data.cityName,
             region: data.regionName || 'India',
-            latitude: parseFloat(data.latitude),
-            longitude: parseFloat(data.longitude),
+            latitude: Number(data.latitude),
+            longitude: Number(data.longitude),
             source: 'freeipapi',
             isApproximateIp: true,
           };

@@ -21,7 +21,8 @@ communityRouter.get('/challenges', (_req: Request, res: Response) => {
  * @route POST /api/community/challenges/:id/toggle
  */
 communityRouter.post('/challenges/:id/toggle', (req: Request, res: Response) => {
-  const { id } = req.params;
+  const rawId = req.params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
   if (!id || !/^[a-zA-Z0-9_-]{1,64}$/.test(id)) {
     res.status(400).json({ error: 'Invalid challenge identifier.' });
     return;
