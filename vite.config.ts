@@ -40,8 +40,27 @@ export default defineConfig({
     },
   },
   test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'frontend',
+          globals: true,
+          environment: 'jsdom',
+          pool: 'vmThreads',
+          setupFiles: './src/test/setup.ts',
+          include: ['src/**/*.test.{ts,tsx}'],
+        },
+      },
+      {
+        test: {
+          name: 'backend',
+          globals: true,
+          environment: 'node',
+          pool: 'threads',
+          include: ['server/**/*.test.ts'],
+        },
+      },
+    ],
   },
 });
