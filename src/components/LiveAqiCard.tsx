@@ -1,6 +1,7 @@
 import React from 'react';
 import { AirQualityMetrics } from '../types';
 import { Clock, CheckCircle2 } from 'lucide-react';
+import { getAqiBadgeColor } from '../utils/aqiColors';
 
 interface LiveAqiCardProps {
   metrics: AirQualityMetrics;
@@ -17,14 +18,7 @@ export const LiveAqiCard: React.FC<LiveAqiCardProps> = ({
   onRefresh,
   isLoading,
 }) => {
-  const getBadgeColor = (aqi: number) => {
-    if (aqi <= 50) return 'bg-emerald-50 text-emerald-800 border-emerald-200';
-    if (aqi <= 100) return 'bg-yellow-50 text-yellow-800 border-yellow-200';
-    if (aqi <= 150) return 'bg-amber-50 text-amber-900 border-amber-300';
-    if (aqi <= 200) return 'bg-red-50 text-red-900 border-red-300';
-    if (aqi <= 300) return 'bg-purple-50 text-purple-950 border-purple-300';
-    return 'bg-rose-950 text-rose-50 border-rose-900';
-  };
+  const getBadgeColor = getAqiBadgeColor;
 
   return (
     <div className="bg-white rounded-xl border border-stone-200/90 shadow-xs p-5 sm:p-6 mb-6">
