@@ -7,6 +7,10 @@ interface SmartDailyPlannerProps {
   city: string;
 }
 
+/**
+ * Smart Daily Diurnal Inversion Planner
+ * @description Time-windowed smog schedule with editable household action notes
+ */
 export const SmartDailyPlanner: React.FC<SmartDailyPlannerProps> = ({ timeline, city }) => {
   const [scheduleItems, setScheduleItems] = useState<SmartDailyAction[]>(timeline);
   const [editingId, setEditingId] = useState<string | null>(null);

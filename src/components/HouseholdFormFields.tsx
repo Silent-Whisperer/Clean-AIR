@@ -6,6 +6,10 @@ interface HouseholdFormFieldsProps {
   setFormData: React.Dispatch<React.SetStateAction<HouseholdProfile>>;
 }
 
+/**
+ * Household Profile Form Fields
+ * @description Accessible form controls for monitored location, occupants, commute, and home equipment
+ */
 export const HouseholdFormFields: React.FC<HouseholdFormFieldsProps> = ({
   formData,
   setFormData,
@@ -21,8 +25,9 @@ export const HouseholdFormFields: React.FC<HouseholdFormFieldsProps> = ({
         <span className="font-bold text-emerald-950 block">Active Monitored Location</span>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block font-semibold text-stone-700 mb-1">City</label>
+            <label htmlFor="household-city" className="block font-semibold text-stone-700 mb-1">City</label>
             <input
+              id="household-city"
               type="text"
               required
               value={activeLocation?.cityName || ''}
@@ -39,8 +44,9 @@ export const HouseholdFormFields: React.FC<HouseholdFormFieldsProps> = ({
           </div>
 
           <div>
-            <label className="block font-semibold text-stone-700 mb-1">Locality / Area</label>
+            <label htmlFor="household-locality" className="block font-semibold text-stone-700 mb-1">Locality / Area</label>
             <input
+              id="household-locality"
               type="text"
               value={activeLocation?.locality || ''}
               onChange={(e) => {
@@ -63,8 +69,9 @@ export const HouseholdFormFields: React.FC<HouseholdFormFieldsProps> = ({
       {/* Household Label & Occupants */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block font-semibold text-stone-700 mb-1">Household Label</label>
+          <label htmlFor="household-label" className="block font-semibold text-stone-700 mb-1">Household Label</label>
           <input
+            id="household-label"
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -72,8 +79,9 @@ export const HouseholdFormFields: React.FC<HouseholdFormFieldsProps> = ({
           />
         </div>
         <div>
-          <label className="block font-semibold text-stone-700 mb-1">Total Family Occupants</label>
+          <label htmlFor="household-occupants" className="block font-semibold text-stone-700 mb-1">Total Family Occupants</label>
           <input
+            id="household-occupants"
             type="number"
             min="1"
             max="20"
@@ -155,8 +163,9 @@ export const HouseholdFormFields: React.FC<HouseholdFormFieldsProps> = ({
       {/* Commute */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block font-semibold text-stone-700 mb-1">Commute Method</label>
+          <label htmlFor="household-commute-mode" className="block font-semibold text-stone-700 mb-1">Commute Method</label>
           <select
+            id="household-commute-mode"
             value={formData.commute.mode}
             onChange={(e) =>
               setFormData({
@@ -177,8 +186,9 @@ export const HouseholdFormFields: React.FC<HouseholdFormFieldsProps> = ({
         </div>
 
         <div>
-          <label className="block font-semibold text-stone-700 mb-1">Round-trip Distance (km)</label>
+          <label htmlFor="household-commute-km" className="block font-semibold text-stone-700 mb-1">Round-trip Distance (km)</label>
           <input
+            id="household-commute-km"
             type="number"
             min="0"
             max="200"
@@ -254,8 +264,9 @@ export const HouseholdFormFields: React.FC<HouseholdFormFieldsProps> = ({
         </div>
 
         <div>
-          <label className="block font-semibold text-stone-700 mb-1">Cooking Fuel</label>
+          <label htmlFor="household-cooking-fuel" className="block font-semibold text-stone-700 mb-1">Cooking Fuel</label>
           <select
+            id="household-cooking-fuel"
             value={formData.homeFeatures.cookingFuel}
             onChange={(e) =>
               setFormData({

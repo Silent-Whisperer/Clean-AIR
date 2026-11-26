@@ -5,6 +5,10 @@ import { Users, CheckCircle2, Circle, HeartHandshake } from 'lucide-react';
 // Module-level cache so challenges load instantaneously on tab switch
 let cachedChallenges: CommunityChallenge[] = [];
 
+/**
+ * Community Smog Mitigation Challenges
+ * @description Collective neighborhood pledges for indoor clean zones and zero open burning
+ */
 export const CommunityMode: React.FC = () => {
   const [challenges, setChallenges] = useState<CommunityChallenge[]>(cachedChallenges);
   const [loading, setLoading] = useState(cachedChallenges.length === 0);

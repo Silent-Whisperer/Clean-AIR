@@ -8,6 +8,10 @@ interface LiveAqiCardProps {
   isLoading?: boolean;
 }
 
+/**
+ * Compact Live AQI Summary Card
+ * @description Displays Indian NAQI, category badge, and PM2.5/PM10 telemetry
+ */
 export const LiveAqiCard: React.FC<LiveAqiCardProps> = ({
   metrics,
   onRefresh,

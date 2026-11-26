@@ -7,6 +7,10 @@ interface SustainableAlternativesProps {
   impact: ImpactEngineReport;
 }
 
+/**
+ * Sustainable Commute & Pulmonary Safety Evaluator
+ * @description Compares transit modes by CO2e emissions and inhaled PM2.5 dose
+ */
 export const SustainableAlternatives: React.FC<SustainableAlternativesProps> = ({
   comparison,
   impact,

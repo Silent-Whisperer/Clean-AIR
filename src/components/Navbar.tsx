@@ -9,6 +9,10 @@ interface NavbarProps {
   aqi?: number;
 }
 
+/**
+ * Primary Application Navigation Bar
+ * @description Sticky desktop header and mobile bottom navigation with live NAQI status pill
+ */
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   onSelectTab,

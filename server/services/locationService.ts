@@ -90,34 +90,7 @@ export class LocationService {
       // Fall through to Strategy 2
     }
 
-    // Strategy 2: ip-api.com
-    try {
-      const url = targetIp ? `http://ip-api.com/json/${encodeURIComponent(targetIp)}` : 'http://ip-api.com/json/';
-      const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
-      if (res.ok) {
-        const data = (await res.json()) as {
-          success?: boolean;
-          city?: string;
-          region?: string;
-          latitude?: number | string;
-          longitude?: number | string;
-        };
-        if (data.status === 'success' && data.city && data.lat && data.lon) {
-          return {
-            city: data.city,
-            region: data.regionName || data.region || 'India',
-            latitude: parseFloat(data.lat),
-            longitude: parseFloat(data.lon),
-            source: 'ip-api',
-            isApproximateIp: true,
-          };
-        }
-      }
-    } catch {
-      // Fall through to Strategy 3
-    }
-
-    // Strategy 3: freeipapi.com fallback
+    // Strategy 2: freeipapi.com fallback (HTTPS)
     try {
       const fallbackUrl = targetIp
         ? `https://freeipapi.com/api/json/${encodeURIComponent(targetIp)}`

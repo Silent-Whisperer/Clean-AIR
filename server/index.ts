@@ -4,15 +4,17 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import fs from 'fs';
-import { EnvironmentalCoordinator } from './coordinator';
-import {
-  validateHouseholdProfileInput,
-  validateChatQueryInput,
-  validateUploadSecurity,
-} from './middleware/security';
-import { HouseholdProfile } from './types';
 import { config } from './config';
+import { airQualityRouter } from './routes/airQualityRoutes';
+import { locationRouter } from './routes/locationRoutes';
+import { agentRouter } from './routes/agentRoutes';
+import { communityRouter } from './routes/communityRoutes';
+import { securityRouter } from './routes/securityRoutes';
 
+/**
+ * ClearAir Hardened Express Application
+ * @description Configures security middleware, rate limiting, modular API routes, and static serving
+ */
 export const app = express();
 app.set('trust proxy', 1);
 
@@ -72,196 +74,12 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
-/**
- * Live AQI endpoint
- * @route GET /api/air-quality
- */
-app.get('/api/air-quality', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const city = (req.query.city as string) || '';
-    const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
-    const lon = req.query.lon ? parseFloat(req.query.lon as string) : undefined;
-
-    const data = await EnvironmentalCoordinator.fetchAirQuality(city || undefined, lat, lon);
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-});
-
-/**
- * Verified CAAQMS Monitoring Stations Endpoint
- * @route GET /api/stations
- */
-app.get('/api/stations', async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const stations = await EnvironmentalCoordinator.fetchMonitoringStations();
-    res.json(stations);
-  } catch (err) {
-    next(err);
-  }
-});
-
-/**
- * Real Network IP Location Auto-Detection Endpoint
- * @route GET /api/location/auto-detect
- */
-app.get('/api/location/auto-detect', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const cfIp = req.headers['cf-connecting-ip'];
-    const realIp = req.headers['x-real-ip'];
-    const rawForwarded = req.headers['x-forwarded-for'];
-    const clientIp =
-      (typeof cfIp === 'string' && cfIp.trim()) ||
-      (typeof realIp === 'string' && realIp.trim()) ||
-      (typeof rawForwarded === 'string' ? rawForwarded.split(',')[0].trim() : undefined) ||
-      req.ip ||
-      req.socket.remoteAddress;
-
-    const detected = await EnvironmentalCoordinator.detectLocation(clientIp);
-    res.json(detected);
-  } catch (err) {
-    next(err);
-  }
-});
-
-/**
- * Server-Side Reverse Geocoding Endpoint for GPS Coordinates
- * @route GET /api/location/reverse-geocode
- */
-app.get('/api/location/reverse-geocode', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const lat = parseFloat(req.query.lat as string);
-    const lon = parseFloat(req.query.lon as string);
-
-    if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      res.status(400).json({ error: 'Valid latitude and longitude query parameters are required.' });
-      return;
-    }
-
-    const resolved = await EnvironmentalCoordinator.reverseGeocode(lat, lon);
-    res.json(resolved);
-  } catch (err) {
-    next(err);
-  }
-});
-
-/**
- * City / Locality Geocoding Search Endpoint
- * @route GET /api/location/search
- */
-app.get('/api/location/search', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const q = ((req.query.q as string) || '').trim();
-    if (!q || q.length > 120) {
-      res.status(400).json({ error: 'A valid search query (1-120 chars) is required.' });
-      return;
-    }
-
-    const result = await EnvironmentalCoordinator.searchLocation(q);
-    if (!result) {
-      res.status(404).json({ error: 'Location not found.' });
-      return;
-    }
-    res.json(result);
-  } catch (err) {
-    next(err);
-  }
-});
-
-/**
- * Personalized Agent Intelligence endpoint
- * @route POST /api/agent/recommendations
- */
-app.post(
-  '/api/agent/recommendations',
-  validateHouseholdProfileInput,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const profile: HouseholdProfile = req.body;
-      const result = await EnvironmentalCoordinator.generateHouseholdRecommendations(profile);
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-/**
- * Grounded Conversational AI Assistant endpoint
- * @route POST /api/agent/chat
- */
-app.post(
-  '/api/agent/chat',
-  validateChatQueryInput,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { question, profile, airQuality } = req.body;
-      const response = await EnvironmentalCoordinator.answerAssistantQuery(
-        question,
-        profile,
-        airQuality
-      );
-      res.json(response);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-/**
- * Community challenges endpoint
- * @route GET /api/community/challenges
- */
-app.get('/api/community/challenges', (_req: Request, res: Response) => {
-  const challenges = EnvironmentalCoordinator.getCommunityChallenges();
-  res.json(challenges);
-});
-
-/**
- * Toggle challenge completion
- * @route POST /api/community/challenges/:id/toggle
- */
-app.post('/api/community/challenges/:id/toggle', (req: Request, res: Response) => {
-  const { id } = req.params;
-  if (!id || !/^[a-zA-Z0-9_-]{1,64}$/.test(id)) {
-    res.status(400).json({ error: 'Invalid challenge identifier.' });
-    return;
-  }
-
-  const { completed } = req.body ?? {};
-  if (typeof completed !== 'boolean') {
-    res.status(400).json({ error: 'A boolean "completed" field is required.' });
-    return;
-  }
-
-  const updated = EnvironmentalCoordinator.toggleCommunityChallenge(id, completed);
-  if (!updated) {
-    res.status(404).json({ error: 'Challenge not found' });
-    return;
-  }
-  res.json(updated);
-});
-
-/**
- * Binary magic bytes validation endpoint for telemetry/sensor log uploads
- * @route POST /api/security/validate-upload
- */
-app.post(
-  '/api/security/validate-upload',
-  validateUploadSecurity,
-  (req: Request, res: Response) => {
-    const validatedBuffer = req.body.validatedBuffer as Buffer;
-    const fileName = req.body.fileName || 'sensor_upload.json';
-
-    res.json({
-      status: 'success',
-      fileName,
-      byteLength: validatedBuffer.length,
-      message: 'Binary magic number validation passed. File is clean and safe for processing.',
-    });
-  }
-);
+// Modular API Routers
+app.use('/api', airQualityRouter);
+app.use('/api/location', locationRouter);
+app.use('/api/agent', agentRouter);
+app.use('/api/community', communityRouter);
+app.use('/api/security', securityRouter);
 
 /**
  * Production Static File Serving for Render / Monolithic Deployment

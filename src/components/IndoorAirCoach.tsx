@@ -8,6 +8,10 @@ interface IndoorAirCoachProps {
   cookingFuel: string;
 }
 
+/**
+ * Indoor Air Quality Coach
+ * @description Room-by-room ventilation, kitchen exhaust, and DIY Corsi-Rosenthal filter protocols
+ */
 export const IndoorAirCoach: React.FC<IndoorAirCoachProps> = ({
   guidance,
   hasPurifier,

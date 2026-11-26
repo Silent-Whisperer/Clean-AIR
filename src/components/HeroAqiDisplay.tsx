@@ -9,6 +9,10 @@ interface HeroAqiDisplayProps {
   isLoading?: boolean;
 }
 
+/**
+ * Hero Atmospheric Telemetry Display
+ * @description Primary CPCB Indian NAQI gauge, dominant pollutant, and 4-hour forecast strip
+ */
 export const HeroAqiDisplay: React.FC<HeroAqiDisplayProps> = ({
   metrics,
   onRefresh,

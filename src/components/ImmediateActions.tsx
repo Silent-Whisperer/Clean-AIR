@@ -9,6 +9,10 @@ interface ImmediateActionsProps {
   onExploreTimeline: () => void;
 }
 
+/**
+ * Immediate Top 3 Critical Health Actions
+ * @description Renders prioritized daily exposure mitigations with completion tracking
+ */
 export const ImmediateActions: React.FC<ImmediateActionsProps> = ({
   actions,
   engineUsed,

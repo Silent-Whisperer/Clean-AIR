@@ -7,6 +7,10 @@ interface ConversationalAssistantProps {
   airQuality: AirQualityMetrics;
 }
 
+/**
+ * Grounded Conversational Public Health Assistant
+ * @description Telemetry-grounded Q&A chat with follow-up prompts and medical disclaimer
+ */
 export const ConversationalAssistant: React.FC<ConversationalAssistantProps> = ({
   profile,
   airQuality,

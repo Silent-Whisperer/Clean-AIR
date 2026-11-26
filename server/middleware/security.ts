@@ -169,12 +169,22 @@ export function validateHouseholdProfileInput(req: Request, res: Response, next:
     profile.activeLocationId = 'loc-default';
   }
 
+  if (typeof profile.name === 'string') {
+    profile.name = profile.name.trim().replace(/[<>'"`;]/g, '').slice(0, 80);
+  }
+
   for (const loc of profile.locations) {
     if (typeof loc.cityName === 'string') {
       loc.cityName = loc.cityName.trim().replace(/[<>'"`;]/g, '').slice(0, 100);
     }
     if (typeof loc.locality === 'string') {
       loc.locality = loc.locality.trim().replace(/[<>'"`;]/g, '').slice(0, 100);
+    }
+    if (typeof loc.customName === 'string') {
+      loc.customName = loc.customName.trim().replace(/[<>'"`;]/g, '').slice(0, 80);
+    }
+    if (typeof loc.label === 'string') {
+      loc.label = loc.label.trim().replace(/[<>'"`;]/g, '').slice(0, 40);
     }
     if (typeof loc.latitude !== 'number' || !Number.isFinite(loc.latitude) || loc.latitude < -90 || loc.latitude > 90) {
       loc.latitude = 22.5726;
