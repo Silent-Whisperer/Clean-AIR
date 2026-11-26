@@ -99,11 +99,13 @@ export const SmartDailyPlanner: React.FC<SmartDailyPlannerProps> = ({ timeline, 
 
                     {!isEditing && (
                       <button
+                        type="button"
                         onClick={() => handleStartEdit(item)}
-                        className="p-1 text-stone-400 hover:text-stone-800"
+                        className="p-1 text-stone-600 hover:text-stone-900"
                         title="Edit schedule note"
+                        aria-label={`Edit schedule note for ${item.title}`}
                       >
-                        <Edit3 className="w-3.5 h-3.5" />
+                        <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -112,6 +114,7 @@ export const SmartDailyPlanner: React.FC<SmartDailyPlannerProps> = ({ timeline, 
                 {isEditing ? (
                   <div className="space-y-2 pt-1">
                     <textarea
+                      aria-label="Edit schedule recommendation note"
                       value={customText}
                       onChange={(e) => setCustomText(e.target.value)}
                       className="w-full text-xs p-3 border border-stone-300 rounded-xl bg-white focus:ring-1 focus:ring-emerald-800"
@@ -119,16 +122,18 @@ export const SmartDailyPlanner: React.FC<SmartDailyPlannerProps> = ({ timeline, 
                     />
                     <div className="flex justify-end gap-2">
                       <button
+                        type="button"
                         onClick={() => setEditingId(null)}
-                        className="px-3 py-1 text-xs text-stone-500 hover:text-stone-800"
+                        className="px-3 py-1 text-xs text-stone-600 hover:text-stone-900"
                       >
                         Cancel
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleSaveEdit(item.id)}
                         className="px-3 py-1 bg-stone-900 text-white rounded-lg text-xs font-semibold flex items-center gap-1"
                       >
-                        <Check className="w-3 h-3" />
+                        <Check className="w-3 h-3" aria-hidden="true" />
                         Save
                       </button>
                     </div>

@@ -61,9 +61,10 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           </div>
 
           <button
+            type="button"
             onClick={onSkip}
             aria-label="Skip onboarding setup for now"
-            className="text-xs text-stone-400 hover:text-stone-700 font-medium"
+            className="text-xs text-stone-600 hover:text-stone-900 font-medium"
           >
             Skip for now
           </button>
@@ -80,6 +81,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
         <div className="p-6 border-t border-stone-100 bg-[#FAF8F5] flex items-center justify-between">
           {step > 1 ? (
             <button
+              type="button"
               onClick={() => setStep(step - 1)}
               aria-label="Go back to previous setup step"
               className="px-4 py-2 text-xs font-semibold text-stone-600 hover:text-stone-900"
@@ -91,6 +93,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           )}
 
           <button
+            type="button"
             onClick={handleNext}
             aria-label={step === 3 ? 'Activate CleanAir Intelligence' : 'Continue to next step'}
             className="px-5 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold hover:bg-stone-800 transition-colors flex items-center gap-1.5 shadow-2xs"

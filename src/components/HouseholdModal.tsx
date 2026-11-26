@@ -55,9 +55,10 @@ export const HouseholdModal: React.FC<HouseholdModalProps> = ({
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-200/50"
+            className="p-1.5 text-stone-600 hover:text-stone-900 rounded-lg hover:bg-stone-200/50"
           >
             <X className="w-5 h-5" />
           </button>

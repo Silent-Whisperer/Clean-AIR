@@ -165,7 +165,7 @@ export const SustainableAlternatives: React.FC<SustainableAlternativesProps> = (
           ))}
         </ul>
 
-        <p className="text-[11px] text-stone-400 italic">
+        <p className="text-[11px] text-stone-600 italic">
           {impact.disclaimer}
         </p>
       </div>
