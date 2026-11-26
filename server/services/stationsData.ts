@@ -210,7 +210,9 @@ export async function getLiveMonitoringStations(): Promise<MonitoringStation[]> 
       const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${meta.latitude}&longitude=${meta.longitude}&current=pm10,pm2_5&timezone=auto`;
       const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
       if (res.ok) {
-        const data = (await res.json()) as any;
+        const data = (await res.json()) as {
+          current?: { pm2_5?: number; pm10?: number; time?: string };
+        };
         const current = data.current || {};
         const pm25 = typeof current.pm2_5 === 'number' ? Math.round(current.pm2_5 * 10) / 10 : 25.0;
         const pm10 = typeof current.pm10 === 'number' ? Math.round(current.pm10 * 10) / 10 : 35.0;

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { MonitoringStation } from '../types';
-import { ExternalLink, Check, ShieldCheck, CheckCircle2, ArrowRight } from 'lucide-react';
+import { ExternalLink, Check, ShieldCheck, CheckCircle2, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface StationExplorerProps {
   currentCity: string;
@@ -11,57 +11,77 @@ interface StationExplorerProps {
 // Module-level cache so stations load instantaneously across tab clicks
 let cachedStations: MonitoringStation[] = [];
 
+/**
+ * Verified CAAQMS Monitoring Station Explorer
+ * @description Lists continuous monitoring stations with city filtering, keyboard-accessible selection, and map view
+ */
 export const StationExplorer: React.FC<StationExplorerProps> = ({
   currentCity,
   onSelectStationLocation,
   onViewDashboard,
 }) => {
   const [stations, setStations] = useState<MonitoringStation[]>(cachedStations);
-  const [selectedStation, setSelectedStation] = useState<MonitoringStation | null>(
-    cachedStations.length > 0 ? cachedStations[0] : null
-  );
+  const [userSelectedStation, setUserSelectedStation] = useState<MonitoringStation | null>(null);
   const [filterCity, setFilterCity] = useState<string>('All');
   const [loading, setLoading] = useState<boolean>(cachedStations.length === 0);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [justActivated, setJustActivated] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadStations = async () => {
-      try {
-        const res = await fetch('/api/stations');
-        if (res.ok) {
-          const data = (await res.json()) as MonitoringStation[];
-          cachedStations = data;
-          if (isMounted) {
-            setStations(data);
-            if (!selectedStation && data.length > 0) {
-              const match = data.find((s) => s.city.toLowerCase().includes(currentCity.toLowerCase()));
-              setSelectedStation(match || data[0]);
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load stations:', err);
-      } finally {
-        if (isMounted) setLoading(false);
+  const loadStations = useCallback(async () => {
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const res = await fetch('/api/stations');
+      if (!res.ok) {
+        throw new Error(`Station service returned HTTP ${res.status}`);
       }
-    };
+      const data = (await res.json()) as MonitoringStation[];
+      cachedStations = data;
+      setStations(data);
+    } catch (err) {
+      console.error('Failed to load stations:', err);
+      setFetchError('Unable to load CAAQMS station telemetry. Please check your connection and retry.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    loadStations();
+  useEffect(() => {
+    let active = true;
+    fetch('/api/stations')
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Station service returned HTTP ${res.status}`);
+        }
+        return (await res.json()) as MonitoringStation[];
+      })
+      .then((data) => {
+        cachedStations = data;
+        if (active) {
+          setStations(data);
+          setFetchError(null);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load stations:', err);
+        if (active) {
+          setFetchError('Unable to load CAAQMS station telemetry. Please check your connection and retry.');
+          setLoading(false);
+        }
+      });
+
     return () => {
-      isMounted = false;
+      active = false;
     };
   }, []);
 
-  // Update selected station when currentCity changes if not already set by user
-  useEffect(() => {
-    if (stations.length > 0) {
-      const match = stations.find((s) => s.city.toLowerCase().includes(currentCity.toLowerCase()));
-      if (match && (!selectedStation || selectedStation.city.toLowerCase() !== currentCity.toLowerCase())) {
-        setSelectedStation(match);
-      }
-    }
-  }, [currentCity, stations]);
+  const selectedStation = useMemo(() => {
+    if (userSelectedStation) return userSelectedStation;
+    if (stations.length === 0) return null;
+    const match = stations.find((s) => s.city.toLowerCase().includes(currentCity.toLowerCase()));
+    return match || stations[0];
+  }, [userSelectedStation, stations, currentCity]);
 
   const cities = ['All', 'Delhi', 'Kolkata', 'Howrah', 'Mumbai', 'Bengaluru', 'Hyderabad', 'Lucknow', 'Patna', 'Chennai'];
 
@@ -102,10 +122,16 @@ export const StationExplorer: React.FC<StationExplorerProps> = ({
         </div>
 
         {/* City Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none -mx-2 px-2 sm:mx-0 sm:px-0">
+        <div
+          role="group"
+          aria-label="Filter monitoring stations by city"
+          className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none -mx-2 px-2 sm:mx-0 sm:px-0"
+        >
           {cities.map((city) => (
             <button
               key={city}
+              type="button"
+              aria-pressed={filterCity === city}
               onClick={() => setFilterCity(city)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[34px] ${
                 filterCity === city
@@ -121,6 +147,19 @@ export const StationExplorer: React.FC<StationExplorerProps> = ({
 
       {loading ? (
         <div className="py-12 text-center text-xs text-stone-500">Connecting to verified continuous monitoring telemetry...</div>
+      ) : fetchError ? (
+        <div className="py-10 px-4 text-center bg-rose-50 border border-rose-200 rounded-2xl">
+          <AlertCircle className="w-6 h-6 text-rose-700 mx-auto mb-2" />
+          <p className="text-xs font-medium text-rose-900 mb-3">{fetchError}</p>
+          <button
+            type="button"
+            onClick={() => void loadStations()}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-stone-900 text-white rounded-xl text-xs font-semibold hover:bg-stone-800"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Retry Stations</span>
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Station List (Col 1-5) */}
@@ -129,10 +168,12 @@ export const StationExplorer: React.FC<StationExplorerProps> = ({
               const isSelected = selectedStation?.id === st.id;
               const isMatchCity = st.city.toLowerCase().includes(currentCity.toLowerCase());
               return (
-                <div
+                <button
                   key={st.id}
-                  onClick={() => setSelectedStation(st)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => setUserSelectedStation(st)}
+                  className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
                     isSelected
                       ? 'bg-emerald-50/70 border-emerald-400 ring-2 ring-emerald-300 shadow-xs'
                       : 'bg-[#FAF8F5] border-stone-200 hover:border-stone-300 hover:bg-stone-50'
@@ -158,7 +199,7 @@ export const StationExplorer: React.FC<StationExplorerProps> = ({
                     </div>
                     <div className="text-[10px] text-stone-500 mt-0.5">{st.category}</div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

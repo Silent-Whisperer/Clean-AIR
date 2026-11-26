@@ -262,7 +262,7 @@ export const HouseholdFormFields: React.FC<HouseholdFormFieldsProps> = ({
                 ...formData,
                 homeFeatures: {
                   ...formData.homeFeatures,
-                  cookingFuel: e.target.value as any,
+                  cookingFuel: e.target.value as HouseholdProfile['homeFeatures']['cookingFuel'],
                 },
               })
             }

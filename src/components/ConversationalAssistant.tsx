@@ -18,7 +18,7 @@ export const ConversationalAssistant: React.FC<ConversationalAssistantProps> = (
       id: 'welcome',
       sender: 'assistant',
       content: `Hello! I am your ClearAir Environmental Health Assistant. I am directly grounded in live CAAQMS telemetry for ${airQuality.stationName} in ${currentCity} (Indian NAQI: ${airQuality.aqi}, ${airQuality.category}, PM2.5: ${airQuality.pm25} µg/m³) and your household configuration (${profile.householdMembers.totalOccupants} occupants, Purifier: ${profile.homeFeatures.hasAirPurifier ? 'HEPA equipped' : 'None (DIY protocol)'}).\n\nWhat specific smog or health decision can I guide you on today?`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: airQuality.timestamp || 'Live',
       groundingSources: [
         {
           title: `Station Telemetry (${airQuality.stationName})`,
@@ -112,7 +112,11 @@ export const ConversationalAssistant: React.FC<ConversationalAssistantProps> = (
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
+      <div
+        aria-live="polite"
+        aria-label="Conversation messages"
+        className="flex-1 overflow-y-auto py-4 space-y-4 pr-1"
+      >
         {messages.map((msg) => {
           const isUser = msg.sender === 'user';
           return (

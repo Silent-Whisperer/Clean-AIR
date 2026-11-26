@@ -12,11 +12,19 @@ export const config = {
   openrouterModel: process.env.OPENROUTER_MODEL || 'google/gemma-4-31b-it:free',
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
   aiTimeoutMs: parseInt(process.env.AI_TIMEOUT_MS || '25000', 10),
+  allowedOrigins: (
+    process.env.ALLOWED_ORIGINS ||
+    'http://localhost:5173,http://localhost:3001,http://127.0.0.1:5173,http://127.0.0.1:3001'
+  )
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
   isProduction: process.env.NODE_ENV === 'production',
 };
 
 /**
  * Validates critical environment configuration at startup
+ * @throws Error if PORT is invalid
  */
 export function validateConfig(): void {
   if (config.port <= 0 || isNaN(config.port)) {

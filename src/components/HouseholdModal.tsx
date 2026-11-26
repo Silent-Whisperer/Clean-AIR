@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { HouseholdProfile } from '../types';
 import { X, Check } from 'lucide-react';
 import { HouseholdFormFields } from './HouseholdFormFields';
+import { useModalFocusTrap } from '../hooks/useModalFocusTrap';
 
 interface HouseholdModalProps {
   isOpen: boolean;
@@ -20,50 +21,10 @@ export const HouseholdModal: React.FC<HouseholdModalProps> = ({
   profile,
   onSave,
 }) => {
-  const [formData, setFormData] = useState<HouseholdProfile>({ ...profile });
+  const [formData, setFormData] = useState<HouseholdProfile>(() => ({ ...profile }));
   const modalRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setFormData({ ...profile });
-  }, [profile, isOpen]);
-
-  // Keyboard navigation: Escape key listener and Tab focus trapping
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-
-      if (e.key === 'Tab' && modalRef.current) {
-        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusableElements.length === 0) return;
-
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
-
-        if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
-            e.preventDefault();
-            lastElement.focus();
-          }
-        } else {
-          if (document.activeElement === lastElement) {
-            e.preventDefault();
-            firstElement.focus();
-          }
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  useModalFocusTrap(isOpen, modalRef, onClose);
 
   if (!isOpen) return null;
 

@@ -1,4 +1,10 @@
+import path from 'path';
 import { Request, Response, NextFunction } from 'express';
+
+const ALLOWED_TELEMETRY_EXTENSIONS = ['.json', '.csv', '.txt', '.log'];
+const VALID_COMMUTE_MODES = ['walking', 'bicycle', 'two_wheeler', 'metro', 'public_transit', 'carpool', 'car_gas', 'private_car', 'work_from_home'] as const;
+const VALID_COOKING_FUELS = ['lpg_gas', 'induction_electric', 'electric_induction', 'biomass_solid'] as const;
+const VALID_BUILDING_TYPES = ['apartment', 'independent_house', 'shared_hostel'] as const;
 
 /**
  * Known binary executable and hazardous magic byte signatures
@@ -76,7 +82,8 @@ export function inspectBinaryMagicBytes(
  */
 export function validateUploadSecurity(req: Request, res: Response, next: NextFunction): void {
   const fileData = req.body?.fileData || req.body?.content;
-  const fileName = req.body?.fileName || 'sensor_upload.json';
+  const rawFileName = typeof req.body?.fileName === 'string' ? req.body.fileName : 'sensor_upload.json';
+  const fileName = path.basename(rawFileName).slice(0, 128) || 'sensor_upload.json';
   const encoding = req.body?.encoding;
 
   if (!fileData) {
@@ -122,6 +129,16 @@ export function validateUploadSecurity(req: Request, res: Response, next: NextFu
     return;
   }
 
+  const ext = path.extname(fileName).toLowerCase();
+  if (ext && !ALLOWED_TELEMETRY_EXTENSIONS.includes(ext)) {
+    res.status(415).json({
+      error: 'Security validation failed: Unsupported telemetry file extension.',
+      details: `Allowed extensions: ${ALLOWED_TELEMETRY_EXTENSIONS.join(', ')}`,
+    });
+    return;
+  }
+
+  req.body.fileName = fileName;
   req.body.validatedBuffer = buffer;
   next();
 }
@@ -159,6 +176,12 @@ export function validateHouseholdProfileInput(req: Request, res: Response, next:
     if (typeof loc.locality === 'string') {
       loc.locality = loc.locality.trim().replace(/[<>'"`;]/g, '').slice(0, 100);
     }
+    if (typeof loc.latitude !== 'number' || !Number.isFinite(loc.latitude) || loc.latitude < -90 || loc.latitude > 90) {
+      loc.latitude = 22.5726;
+    }
+    if (typeof loc.longitude !== 'number' || !Number.isFinite(loc.longitude) || loc.longitude < -180 || loc.longitude > 180) {
+      loc.longitude = 88.3639;
+    }
   }
 
   if (!profile.householdMembers || typeof profile.householdMembers !== 'object') {
@@ -168,6 +191,9 @@ export function validateHouseholdProfileInput(req: Request, res: Response, next:
       hasAsthmaOrRespiratory: false,
       totalOccupants: 3,
     };
+  } else {
+    const occ = Number(profile.householdMembers.totalOccupants);
+    profile.householdMembers.totalOccupants = Number.isFinite(occ) ? Math.min(50, Math.max(1, Math.round(occ))) : 3;
   }
 
   if (!profile.commute || typeof profile.commute !== 'object') {
@@ -178,6 +204,12 @@ export function validateHouseholdProfileInput(req: Request, res: Response, next:
       departureTime: '08:30',
       returnTime: '18:00',
     };
+  } else {
+    if (!VALID_COMMUTE_MODES.includes(profile.commute.mode)) {
+      profile.commute.mode = 'public_transit';
+    }
+    const km = Number(profile.commute.roundTripKm);
+    profile.commute.roundTripKm = Number.isFinite(km) ? Math.min(500, Math.max(0, km)) : 15;
   }
 
   if (!profile.homeFeatures || typeof profile.homeFeatures !== 'object') {
@@ -187,6 +219,13 @@ export function validateHouseholdProfileInput(req: Request, res: Response, next:
       buildingType: 'apartment',
       cookingFuel: 'lpg_gas',
     };
+  } else {
+    if (!VALID_COOKING_FUELS.includes(profile.homeFeatures.cookingFuel)) {
+      profile.homeFeatures.cookingFuel = 'lpg_gas';
+    }
+    if (!VALID_BUILDING_TYPES.includes(profile.homeFeatures.buildingType)) {
+      profile.homeFeatures.buildingType = 'apartment';
+    }
   }
 
   next();

@@ -40,9 +40,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Brand Logo & Name */}
-            <div
-              className="flex items-center gap-2.5 sm:gap-3 cursor-pointer py-1"
+            <button
+              type="button"
               onClick={() => onSelectTab('dashboard')}
+              aria-label="ClearAir Home"
+              className="flex items-center gap-2.5 sm:gap-3 cursor-pointer py-1 text-left"
             >
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-900 flex items-center justify-center text-white font-serif font-black shadow-xs shrink-0">
                 C
@@ -60,7 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Severe winter smog & environmental health intelligence
                 </p>
               </div>
-            </div>
+            </button>
 
             {/* Quick status pill & preferences button */}
             <div className="flex items-center gap-2 sm:gap-3">

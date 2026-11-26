@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { HouseholdProfile, SavedLocation } from '../types';
 
 /**
@@ -10,7 +10,12 @@ export function useAutoLocation(
   profile: HouseholdProfile,
   setProfile: React.Dispatch<React.SetStateAction<HouseholdProfile>>
 ): void {
+  const hasAttemptedRef = useRef(false);
+
   useEffect(() => {
+    if (hasAttemptedRef.current) return;
+    hasAttemptedRef.current = true;
+
     const hasDetectedGps = profile.locations.some((l) => l.isCurrentGps);
     if (hasDetectedGps) return;
 
@@ -99,5 +104,5 @@ export function useAutoLocation(
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [profile.locations, setProfile]);
 }

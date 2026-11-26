@@ -58,7 +58,7 @@ describe('LocationBar Component', () => {
         latitude: 22.5726,
         longitude: 88.3639,
       }),
-    }) as any;
+    }) as unknown as typeof fetch;
 
     render(
       <LocationBar

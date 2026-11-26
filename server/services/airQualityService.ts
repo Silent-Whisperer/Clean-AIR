@@ -40,7 +40,22 @@ export async function fetchLiveAirQuality(query: string, lat?: number, lon?: num
       throw new Error(`Open-Meteo responded with status ${response.status}`);
     }
 
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as {
+      current?: {
+        time?: string;
+        pm2_5?: number;
+        pm10?: number;
+        nitrogen_dioxide?: number;
+        ozone?: number;
+        sulphur_dioxide?: number;
+        carbon_monoxide?: number;
+      };
+      hourly?: {
+        time?: string[];
+        pm2_5?: number[];
+        pm10?: number[];
+      };
+    };
     const current = data.current || {};
     const hourly = data.hourly || {};
 

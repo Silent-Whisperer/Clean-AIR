@@ -95,7 +95,13 @@ export async function geocodeLocationName(
       }
     );
     if (res.ok) {
-      const data = (await res.json()) as any[];
+      const data = (await res.json()) as Array<{
+        lat: string;
+        lon: string;
+        name?: string;
+        display_name?: string;
+        address?: Record<string, string | undefined>;
+      }>;
       if (Array.isArray(data) && data.length > 0) {
         const item = data[0];
         const addr = item.address || {};
@@ -136,11 +142,16 @@ export async function reverseGeocodeCoordinates(
         { signal: AbortSignal.timeout(5000) }
       );
       if (gRes.ok) {
-        const gData = (await gRes.json()) as any;
+        const gData = (await gRes.json()) as {
+          status?: string;
+          results?: Array<{
+            address_components?: Array<{ long_name?: string; types?: string[] }>;
+          }>;
+        };
         if (gData.status === 'OK' && Array.isArray(gData.results) && gData.results.length > 0) {
           const result = gData.results[0];
           const getComp = (type: string) =>
-            result.address_components?.find((c: any) => Array.isArray(c.types) && c.types.includes(type))?.long_name;
+            result.address_components?.find((c) => Array.isArray(c.types) && c.types.includes(type))?.long_name;
           const city =
             getComp('locality') ||
             getComp('administrative_area_level_2') ||
@@ -170,7 +181,7 @@ export async function reverseGeocodeCoordinates(
       }
     );
     if (res.ok) {
-      const data = (await res.json()) as any;
+      const data = (await res.json()) as { address?: Record<string, string | undefined> };
       const addr = data.address || {};
       const city =
         addr.city ||
@@ -214,7 +225,11 @@ export async function reverseGeocodeCoordinates(
       { signal: AbortSignal.timeout(5000) }
     );
     if (bdcRes.ok) {
-      const bdcData = (await bdcRes.json()) as any;
+      const bdcData = (await bdcRes.json()) as {
+        city?: string;
+        locality?: string;
+        principalSubdivision?: string;
+      };
       const city = bdcData.city || bdcData.locality || bdcData.principalSubdivision;
       if (city) {
         return {

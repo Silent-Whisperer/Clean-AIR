@@ -69,7 +69,9 @@ export class AiAgentService {
         if (!res.ok) {
           throw new Error(`OpenRouter HTTP ${res.status}`);
         }
-        const data = (await res.json()) as any;
+        const data = (await res.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
         const text = data.choices?.[0]?.message?.content || '';
         return { text, engine: `OpenRouter (${config.openrouterModel})` };
       } finally {
@@ -91,7 +93,7 @@ export class AiAgentService {
           temperature: 0.2,
         },
       });
-      const response: any = await Promise.race([aiPromise, timeoutPromise]);
+      const response = (await Promise.race([aiPromise, timeoutPromise])) as { text?: string };
       return { text: response.text || '', engine: 'Gemini 2.5 Flash' };
     }
 

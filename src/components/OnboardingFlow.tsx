@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { HouseholdProfile } from '../types';
 import { ArrowRight } from 'lucide-react';
 import { OnboardingStep1 } from './subcomponents/OnboardingStep1';
 import { OnboardingStep2 } from './subcomponents/OnboardingStep2';
 import { OnboardingStep3 } from './subcomponents/OnboardingStep3';
+import { useModalFocusTrap } from '../hooks/useModalFocusTrap';
 
 interface OnboardingFlowProps {
   initialProfile: HouseholdProfile;
@@ -24,40 +25,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   const [profile, setProfile] = useState<HouseholdProfile>({ ...initialProfile });
   const modalRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onSkip();
-        return;
-      }
-
-      if (e.key === 'Tab' && modalRef.current) {
-        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusableElements.length === 0) return;
-
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
-
-        if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
-            e.preventDefault();
-            lastElement.focus();
-          }
-        } else {
-          if (document.activeElement === lastElement) {
-            e.preventDefault();
-            firstElement.focus();
-          }
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onSkip]);
+  useModalFocusTrap(true, modalRef, onSkip);
 
   const handleNext = () => {
     if (step < 3) {

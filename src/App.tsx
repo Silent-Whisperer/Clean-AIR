@@ -1,18 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Navbar } from './components/Navbar';
 import { LocationBar } from './components/LocationBar';
 import { DashboardView } from './components/DashboardView';
-import { SmartDailyPlanner } from './components/SmartDailyPlanner';
-import { StationExplorer } from './components/StationExplorer';
-import { IndoorAirCoach } from './components/IndoorAirCoach';
-import { SustainableAlternatives } from './components/SustainableAlternatives';
-import { CommunityMode } from './components/CommunityMode';
-import { ConversationalAssistant } from './components/ConversationalAssistant';
 import { HouseholdModal } from './components/HouseholdModal';
 import { OnboardingFlow } from './components/OnboardingFlow';
 import { Footer } from './components/Footer';
 import { useAutoLocation } from './hooks/useAutoLocation';
-import { loadStoredProfile, saveStoredProfile, DEFAULT_INITIAL_PROFILE } from './utils/profileStorage';
+import { loadStoredProfile, saveStoredProfile } from './utils/profileStorage';
 import {
   HouseholdProfile,
   AirQualityMetrics,
@@ -20,6 +14,25 @@ import {
   SavedLocation,
 } from './types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+
+const SmartDailyPlanner = lazy(() =>
+  import('./components/SmartDailyPlanner').then((m) => ({ default: m.SmartDailyPlanner }))
+);
+const StationExplorer = lazy(() =>
+  import('./components/StationExplorer').then((m) => ({ default: m.StationExplorer }))
+);
+const IndoorAirCoach = lazy(() =>
+  import('./components/IndoorAirCoach').then((m) => ({ default: m.IndoorAirCoach }))
+);
+const SustainableAlternatives = lazy(() =>
+  import('./components/SustainableAlternatives').then((m) => ({ default: m.SustainableAlternatives }))
+);
+const CommunityMode = lazy(() =>
+  import('./components/CommunityMode').then((m) => ({ default: m.CommunityMode }))
+);
+const ConversationalAssistant = lazy(() =>
+  import('./components/ConversationalAssistant').then((m) => ({ default: m.ConversationalAssistant }))
+);
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
@@ -39,16 +52,7 @@ export const App: React.FC = () => {
   const activeLocation =
     profile.locations.find((l) => l.id === profile.activeLocationId) || profile.locations[0];
 
-  // Synchronize environmental telemetry and agent plans
-  useEffect(() => {
-    saveStoredProfile(profile);
-    fetchTelemetryAndRecommendations(profile);
-  }, [profile.activeLocationId, profile.locations]);
-
-  // Auto-detect real user municipal location on initial startup via network resolution
-  useAutoLocation(profile, setProfile);
-
-  const fetchTelemetryAndRecommendations = async (currentProfile: HouseholdProfile) => {
+  const fetchTelemetryAndRecommendations = useCallback(async (currentProfile: HouseholdProfile) => {
     setLoading(true);
     setError(null);
     try {
@@ -71,7 +75,46 @@ export const App: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Synchronize environmental telemetry and agent plans
+  useEffect(() => {
+    saveStoredProfile(profile);
+    let active = true;
+    fetch('/api/agent/recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Server returned status ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (active) {
+          setAirQuality(data.airQuality);
+          setAgentData(data.recommendations);
+          setError(null);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load live recommendations:', err);
+        if (active) {
+          setError('Unable to fetch live telemetry. Checking local connection to monitoring services.');
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [profile]);
+
+  // Auto-detect real user municipal location on initial startup via network resolution
+  useAutoLocation(profile, setProfile);
 
   const handleSelectLocation = (loc: SavedLocation) => {
     setProfile((prev) => ({
@@ -161,7 +204,13 @@ export const App: React.FC = () => {
 
         {/* Tab Views */}
         {airQuality && agentData && (
-          <>
+          <Suspense
+            fallback={
+              <div className="py-16 text-center text-xs text-stone-500">
+                Loading view...
+              </div>
+            }
+          >
             {activeTab === 'dashboard' && (
               <DashboardView
                 airQuality={airQuality}
@@ -206,7 +255,7 @@ export const App: React.FC = () => {
             {activeTab === 'assistant' && (
               <ConversationalAssistant profile={profile} airQuality={airQuality} />
             )}
-          </>
+          </Suspense>
         )}
       </main>
 
@@ -214,6 +263,7 @@ export const App: React.FC = () => {
 
       {/* Profile Settings Modal */}
       <HouseholdModal
+        key={isModalOpen ? 'household-modal-open' : 'household-modal-closed'}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         profile={profile}

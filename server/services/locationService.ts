@@ -68,7 +68,13 @@ export class LocationService {
       const url = targetIp ? `https://ipwho.is/${encodeURIComponent(targetIp)}` : 'https://ipwho.is/';
       const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
       if (res.ok) {
-        const data = (await res.json()) as any;
+        const data = (await res.json()) as {
+          success?: boolean;
+          city?: string;
+          region?: string;
+          latitude?: number | string;
+          longitude?: number | string;
+        };
         if (data.success !== false && data.city && data.latitude && data.longitude) {
           return {
             city: data.city,
@@ -89,7 +95,13 @@ export class LocationService {
       const url = targetIp ? `http://ip-api.com/json/${encodeURIComponent(targetIp)}` : 'http://ip-api.com/json/';
       const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
       if (res.ok) {
-        const data = (await res.json()) as any;
+        const data = (await res.json()) as {
+          success?: boolean;
+          city?: string;
+          region?: string;
+          latitude?: number | string;
+          longitude?: number | string;
+        };
         if (data.status === 'success' && data.city && data.lat && data.lon) {
           return {
             city: data.city,
@@ -112,7 +124,13 @@ export class LocationService {
         : 'https://freeipapi.com/api/json/';
       const res = await fetch(fallbackUrl, { signal: AbortSignal.timeout(4000) });
       if (res.ok) {
-        const data = (await res.json()) as any;
+        const data = (await res.json()) as {
+          success?: boolean;
+          city?: string;
+          region?: string;
+          latitude?: number | string;
+          longitude?: number | string;
+        };
         if (data.cityName && data.latitude && data.longitude) {
           return {
             city: data.cityName,

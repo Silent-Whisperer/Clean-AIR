@@ -22,7 +22,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: config.isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:'],
         connectSrc: ["'self'", 'https:'],
@@ -33,7 +33,18 @@ app.use(
   })
 );
 
-app.use(cors({ origin: true, credentials: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || config.allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Origin not allowed by CORS policy'));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: '1mb' }));
 
 // Express Rate Limiter: 250 requests per 15 minutes per IP
@@ -213,8 +224,18 @@ app.get('/api/community/challenges', (_req: Request, res: Response) => {
  */
 app.post('/api/community/challenges/:id/toggle', (req: Request, res: Response) => {
   const { id } = req.params;
-  const { completed } = req.body;
-  const updated = EnvironmentalCoordinator.toggleCommunityChallenge(id, Boolean(completed));
+  if (!id || !/^[a-zA-Z0-9_-]{1,64}$/.test(id)) {
+    res.status(400).json({ error: 'Invalid challenge identifier.' });
+    return;
+  }
+
+  const { completed } = req.body ?? {};
+  if (typeof completed !== 'boolean') {
+    res.status(400).json({ error: 'A boolean "completed" field is required.' });
+    return;
+  }
+
+  const updated = EnvironmentalCoordinator.toggleCommunityChallenge(id, completed);
   if (!updated) {
     res.status(404).json({ error: 'Challenge not found' });
     return;
@@ -261,12 +282,17 @@ if (fs.existsSync(distPath)) {
  * Centralized Hardened Error Handler
  * @description Prevents stack trace and sensitive error leakage in production
  */
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   console.error('[ClearAir Express Error]', err);
   const isProd = config.isProduction;
+  const status =
+    typeof err === 'object' && err !== null && 'status' in err && typeof (err as { status: unknown }).status === 'number'
+      ? (err as { status: number }).status
+      : 500;
+  const message = err instanceof Error ? err.message : 'Unknown error';
 
-  res.status(err.status || 500).json({
+  res.status(status).json({
     error: 'An internal server error occurred.',
-    message: isProd ? 'Internal processing failure.' : err.message || 'Unknown error',
+    message: isProd ? 'Internal processing failure.' : message,
   });
 });
